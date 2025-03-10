@@ -9,7 +9,7 @@ import es.um.redes.nanoFiles.util.FileInfo;
 
 public class NFController {
 	/**
-	 * Diferentes estados del cliente de acuerdo con el autómata
+	 * Diferentes estados del cliente de acuerdo con  autómata
 	 */
 	private static final byte OFFLINE = 0;
 	/*
