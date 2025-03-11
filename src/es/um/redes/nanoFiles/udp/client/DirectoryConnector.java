@@ -50,10 +50,6 @@ public class DirectoryConnector {
 	 */
 	private String directoryHostname;
 
-
-
-
-
 	public DirectoryConnector(String hostname) throws IOException {
 		// Guardamos el string con el nombre/IP del host
 		directoryHostname = hostname;
@@ -72,7 +68,6 @@ public class DirectoryConnector {
 		socket = new DatagramSocket();
 		socket.setSoTimeout(TIMEOUT);
 
-
 	}
 
 	/**
@@ -82,63 +77,63 @@ public class DirectoryConnector {
 	 * @return los datos recibidos del directorio (mensaje de respuesta)
 	 */
 	private byte[] sendAndReceiveDatagrams(byte[] requestData) {
-        byte responseData[] = new byte[DirMessage.PACKET_MAX_SIZE];
-        byte response[] = null;
+		byte responseData[] = new byte[DirMessage.PACKET_MAX_SIZE];
+		byte response[] = null;
 
-        if (directoryAddress == null) {
-            System.err.println("DirectoryConnector.sendAndReceiveDatagrams: UDP server destination address is null!");
-            System.exit(-1);
-        }
+		if (directoryAddress == null) {
+			System.err.println("DirectoryConnector.sendAndReceiveDatagrams: UDP server destination address is null!");
+			System.exit(-1);
+		}
 
-        if (socket == null) {
-            System.err.println("DirectoryConnector.sendAndReceiveDatagrams: UDP socket is null!");
-            System.exit(-1);
-        }
+		if (socket == null) {
+			System.err.println("DirectoryConnector.sendAndReceiveDatagrams: UDP socket is null!");
+			System.exit(-1);
+		}
 
-        DatagramPacket sendPacket = new DatagramPacket(requestData, requestData.length, directoryAddress);
-        Arrays.fill(responseData, (byte) 0);
-        DatagramPacket receivePacket = new DatagramPacket(responseData, responseData.length);
+		DatagramPacket sendPacket = new DatagramPacket(requestData, requestData.length, directoryAddress);
+		Arrays.fill(responseData, (byte) 0);
+		DatagramPacket receivePacket = new DatagramPacket(responseData, responseData.length);
 
-        int attempts = 0;
-        boolean receivedResponse = false;
+		int attempts = 0;
+		boolean receivedResponse = false;
 
-        try {
-            socket.setSoTimeout(TIMEOUT); // Configurar timeout para la recepción
-            while (attempts < MAX_NUMBER_OF_ATTEMPTS && !receivedResponse) {
-                try {
-                	System.out.println("Sending: " + new String(requestData));
-                    socket.send(sendPacket); // Enviar datagrama
-                    socket.receive(receivePacket); // Intentar recibir respuesta
-                    
-                    receivedResponse = true;
-                } catch (SocketTimeoutException e) {
-                    attempts++;
-                    System.err.println("Timeout alcanzado. Reintentando... (" + attempts + "/" + MAX_NUMBER_OF_ATTEMPTS + ")");
-                }
-            }
-            
-            if (receivedResponse) {
-                response = new byte[receivePacket.getLength()];
-                System.arraycopy(receivePacket.getData(), receivePacket.getOffset(), response, 0, receivePacket.getLength());
-            } else {
-                System.err.println("No se recibió respuesta tras " + MAX_NUMBER_OF_ATTEMPTS + " intentos.");
-            }
+		try {
+			socket.setSoTimeout(TIMEOUT); // Configurar timeout para la recepción
+			while (attempts < MAX_NUMBER_OF_ATTEMPTS && !receivedResponse) {
+				try {
+					System.out.println("Sending: " + new String(requestData));
+					socket.send(sendPacket); // Enviar datagrama
+					socket.receive(receivePacket); // Intentar recibir respuesta
 
-        } catch (IOException e) {
-            System.err.println("Error de E/S en sendAndReceiveDatagrams: " + e.getMessage());
-            e.printStackTrace();
-            System.exit(-1);
-        }
+					receivedResponse = true;
+				} catch (SocketTimeoutException e) {
+					attempts++;
+					System.err.println(
+							"Timeout alcanzado. Reintentando... (" + attempts + "/" + MAX_NUMBER_OF_ATTEMPTS + ")");
+				}
+			}
 
-        if (response != null && response.length == responseData.length) {
-            System.err.println("Your response is as large as the datagram reception buffer!!\n"
-                    + "You must extract from the buffer only the bytes that belong to the datagram!");
-        }
-        System.out.println("Data received: " + new String(response));
-        return response;
-    }
+			if (receivedResponse) {
+				response = new byte[receivePacket.getLength()];
+				System.arraycopy(receivePacket.getData(), receivePacket.getOffset(), response, 0,
+						receivePacket.getLength());
+			} else {
+				System.err.println("No se recibió respuesta tras " + MAX_NUMBER_OF_ATTEMPTS + " intentos.");
+			}
 
+		} catch (IOException e) {
+			System.err.println("Error de E/S en sendAndReceiveDatagrams: " + e.getMessage());
+			e.printStackTrace();
+			System.exit(-1);
+		}
 
+		if (response != null && response.length == responseData.length) {
+			System.err.println("Your response is as large as the datagram reception buffer!!\n"
+					+ "You must extract from the buffer only the bytes that belong to the datagram!");
+		}
+		System.out.println("Data received: " + new String(response));
+		return response;
+	}
 
 	/**
 	 * Método para probar la comunicación con el directorio mediante el envío y
@@ -154,21 +149,20 @@ public class DirectoryConnector {
 		 * devuelve verdadero, falso si la respuesta no contiene los datos esperados.
 		 */
 		boolean success = false;
-		 try {
-			 byte[] requestData = "ping".getBytes();
-			 
-			 byte[] responseData = sendAndReceiveDatagrams(requestData);
-			 
-			 if(responseData!=null) {
-				 String responseString = new String(responseData).trim();
-				 if(responseString.startsWith("pingok")) {
-					 success = true;
-				 }
-			 }
-		 } catch (Exception e) {
-			 System.out.println("Error in testSendAndReceive: " + e.getMessage());
-		 }
+		try {
+			byte[] requestData = "ping".getBytes();
 
+			byte[] responseData = sendAndReceiveDatagrams(requestData);
+
+			if (responseData != null) {
+				String responseString = new String(responseData).trim();
+				if (responseString.startsWith("pingok")) {
+					success = true;
+				}
+			}
+		} catch (Exception e) {
+			System.out.println("Error in testSendAndReceive: " + e.getMessage());
+		}
 
 		return success;
 	}
@@ -197,21 +191,19 @@ public class DirectoryConnector {
 		 * recibida en el datagrama de respuesta es "welcome", imprimir si éxito o
 		 * fracaso. 6.Devolver éxito/fracaso de la operación.
 		 */
-		
+
 		try {
 			byte[] requestData = new String("ping&" + NanoFiles.PROTOCOL_ID).getBytes(StandardCharsets.UTF_8);
 			byte[] response = sendAndReceiveDatagrams(requestData);
-			if(response!=null) {
-			    String receivedMessage = new String(response, StandardCharsets.UTF_8).trim();
-				if(receivedMessage.equals("welcome")) {
+			if (response != null) {
+				String receivedMessage = new String(response, StandardCharsets.UTF_8).trim();
+				if (receivedMessage.equals("welcome")) {
 					success = true;
 				}
 			}
 		} catch (Exception e) {
-			 System.out.println("Error in pingDirectoryRaw: " + e.getMessage());
-		 }
-		
-
+			System.out.println("Error in pingDirectoryRaw: " + e.getMessage());
+		}
 
 		return success;
 	}
@@ -239,12 +231,12 @@ public class DirectoryConnector {
 		String pingMessageString = pingMessage.toString();
 		byte[] requestData = pingMessageString.getBytes();
 		byte[] response = sendAndReceiveDatagrams(requestData);
-		if(response!=null) {
+		if (response != null) {
 			String responseAString = new String(response, 0, response.length);
 			System.out.println("Receiveing..." + responseAString);
-			
+
 			DirMessage msgFromServer = DirMessage.fromString(responseAString);
-			if(msgFromServer != null && msgFromServer.getOperation().equals(DirMessageOps.OPERATION_PING_OK)) {
+			if (msgFromServer != null && msgFromServer.getOperation().equals(DirMessageOps.OPERATION_PING_OK)) {
 				success = true;
 			}
 		}
@@ -265,8 +257,25 @@ public class DirectoryConnector {
 		boolean success = false;
 
 		// TODO: Ver TODOs en pingDirectory y seguir esquema similar
+		DirMessage getFileListMessage = new DirMessage(DirMessageOps.OPERATION_SERVER,
+				NanoFiles.PROTOCOL_ID);
+		String getFileListMessageString = getFileListMessage.toString();
+		byte[] requestData = getFileListMessageString.getBytes();
+		byte[] response = sendAndReceiveDatagrams(requestData);
 
+		if (response != null) {
 
+			String responseAString = new String(response, 0, response.length);
+			System.out.println("Receiveing..." + responseAString);
+			DirMessage msgFromServer = DirMessage.fromString(responseAString);
+
+			if (msgFromServer != null && msgFromServer.getOperation().equals(DirMessageOps.OPERATION_SERVER_OK)) {
+
+				success = true;
+
+			}
+
+		}
 
 		return success;
 	}
@@ -284,7 +293,23 @@ public class DirectoryConnector {
 		FileInfo[] filelist = new FileInfo[0];
 		// TODO: Ver TODOs en pingDirectory y seguir esquema similar
 
+		DirMessage getFileListMessage = new DirMessage(DirMessageOps.OPERATION_GETFILELIST, NanoFiles.PROTOCOL_ID);
+		String getFileListMessageString = getFileListMessage.toString();
+		byte[] requestData = getFileListMessageString.getBytes();
+		byte[] response = sendAndReceiveDatagrams(requestData);
 
+		if (response != null) {
+
+			String responseAString = new String(response, 0, response.length);
+			System.out.println("Receiveing..." + responseAString);
+			DirMessage msgFromServer = DirMessage.fromString(responseAString);
+
+			if (msgFromServer != null && msgFromServer.getOperation().equals(DirMessageOps.OPERATION_GETFILELIST_OK)) {
+
+				// Añadir elementos a filelist;
+			}
+
+		}
 
 		return filelist;
 	}
@@ -302,8 +327,25 @@ public class DirectoryConnector {
 	public InetSocketAddress[] getServersSharingThisFile(String filenameSubstring) {
 		// TODO: Ver TODOs en pingDirectory y seguir esquema similar
 		InetSocketAddress[] serversList = new InetSocketAddress[0];
+		
+		DirMessage getFileListMessage = new DirMessage(DirMessageOps.OPERATION_DOWNLOAD, NanoFiles.PROTOCOL_ID);
+		String getFileListMessageString = getFileListMessage.toString();
+		byte[] requestData = getFileListMessageString.getBytes();
+		byte[] response = sendAndReceiveDatagrams(requestData);
 
+		if (response != null) {
 
+			String responseAString = new String(response, 0, response.length);
+			System.out.println("Receiveing..." + responseAString);
+			DirMessage msgFromServer = DirMessage.fromString(responseAString);
+
+			if (msgFromServer != null && msgFromServer.getOperation().equals(DirMessageOps.OPERATION_DOWNLOAD_OK)) {
+
+				// Añadir elementos a serverList;
+			}
+
+		}
+		
 
 		return serversList;
 	}
@@ -317,13 +359,7 @@ public class DirectoryConnector {
 	public boolean unregisterFileServer() {
 		boolean success = false;
 
-
-
-
 		return success;
 	}
-
-
-
 
 }
