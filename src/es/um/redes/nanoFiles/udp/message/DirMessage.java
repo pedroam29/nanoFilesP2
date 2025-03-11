@@ -1,7 +1,9 @@
 package es.um.redes.nanoFiles.udp.message;
 
+import java.net.InetSocketAddress;
+import java.util.List;
 
-
+import es.um.redes.nanoFiles.util.FileInfo;
 
 /**
  * Clase que modela los mensajes del protocolo de comunicación entre pares para
@@ -42,6 +44,10 @@ public class DirMessage {
 	 * TODO: (Boletín MensajesASCII) Crear un atributo correspondiente a cada uno de
 	 * los campos de los diferentes mensajes de este protocolo.
 	 */
+	private FileInfo[] files;
+	private InetSocketAddress[] serverList;
+	private int serverPort;
+	private String filenameSubstring;
 	
 	public DirMessage(String op) {
 		operation = op;
@@ -57,6 +63,22 @@ public class DirMessage {
 		operation = op;
 		protocolId = idProtocol;
 	}
+	public DirMessage (String op, String idProtocol, int port, FileInfo[] filesInfo) {
+		operation = op;
+		protocolId = idProtocol;
+		files = filesInfo;
+		setServerPort(port); 
+		
+	}
+	public DirMessage (String op, String idProtocol, String filename) {
+		operation = op;
+		protocolId = idProtocol;
+		setFilenameSubstring(filename);
+	}
+	
+	
+	
+	
 	
 	public String getOperation() {
 		return operation;
@@ -161,4 +183,31 @@ public class DirMessage {
 		return sb.toString();
 	}
 
+	public FileInfo[] getFiles() {
+		if (files != null)
+			return files;
+		return null;
+	}
+	
+	public InetSocketAddress[] getServerList() {
+		return serverList;
+	}
+
+	public int getServerPort() {
+		return serverPort;
+	}
+
+	public void setServerPort(int serverPort) {
+		this.serverPort = serverPort;
+	}
+
+	public String getFilenameSubstring() {
+		return filenameSubstring;
+	}
+
+	public void setFilenameSubstring(String filenameSubstring) {
+		this.filenameSubstring = filenameSubstring;
+	}
+	
+	
 }

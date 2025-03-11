@@ -258,7 +258,7 @@ public class DirectoryConnector {
 
 		// TODO: Ver TODOs en pingDirectory y seguir esquema similar
 		DirMessage getFileListMessage = new DirMessage(DirMessageOps.OPERATION_SERVER,
-				NanoFiles.PROTOCOL_ID);
+				NanoFiles.PROTOCOL_ID, serverPort, files);
 		String getFileListMessageString = getFileListMessage.toString();
 		byte[] requestData = getFileListMessageString.getBytes();
 		byte[] response = sendAndReceiveDatagrams(requestData);
@@ -305,8 +305,8 @@ public class DirectoryConnector {
 			DirMessage msgFromServer = DirMessage.fromString(responseAString);
 
 			if (msgFromServer != null && msgFromServer.getOperation().equals(DirMessageOps.OPERATION_GETFILELIST_OK)) {
-
 				// Añadir elementos a filelist;
+				filelist = msgFromServer.getFiles();
 			}
 
 		}
@@ -328,7 +328,7 @@ public class DirectoryConnector {
 		// TODO: Ver TODOs en pingDirectory y seguir esquema similar
 		InetSocketAddress[] serversList = new InetSocketAddress[0];
 		
-		DirMessage getFileListMessage = new DirMessage(DirMessageOps.OPERATION_DOWNLOAD, NanoFiles.PROTOCOL_ID);
+		DirMessage getFileListMessage = new DirMessage(DirMessageOps.OPERATION_DOWNLOAD, NanoFiles.PROTOCOL_ID, filenameSubstring );
 		String getFileListMessageString = getFileListMessage.toString();
 		byte[] requestData = getFileListMessageString.getBytes();
 		byte[] response = sendAndReceiveDatagrams(requestData);
@@ -342,6 +342,7 @@ public class DirectoryConnector {
 			if (msgFromServer != null && msgFromServer.getOperation().equals(DirMessageOps.OPERATION_DOWNLOAD_OK)) {
 
 				// Añadir elementos a serverList;
+				serversList = msgFromServer.getServerList();
 			}
 
 		}
