@@ -6,13 +6,17 @@ import java.util.TreeMap;
 public class PeerMessageOps {
 
 	public static final byte OPCODE_INVALID_CODE = 0;
-
 	/*
 	 * TODO: (Boletín MensajesBinarios) Añadir aquí todas las constantes que definen
 	 * los diferentes tipos de mensajes del protocolo de comunicación con un par
 	 * servidor de ficheros (valores posibles del campo "operation").
 	 */
-
+	public static final byte OPCODE_FILE_NOT_FOUND = 1;
+	public static final byte OPCODE_DOWNLOAD = 2;
+	public static final byte OPCODE_FILE = 3;
+	public static final byte OPCODE_END_OF_FILE = 4;
+	public static final byte OPCODE_GET_CHUNK = 5;
+	public static final byte OPCODE_UPLOAD_FILE = 6;
 
 
 
@@ -21,15 +25,26 @@ public class PeerMessageOps {
 	 * mensajes definidos anteriormente, añadirlos al array "valid_opcodes" y añadir
 	 * su representación textual a "valid_operations_str" EN EL MISMO ORDEN.
 	 */
-	private static final Byte[] _valid_opcodes = { OPCODE_INVALID_CODE,
 
-
-
+	private static final Byte[] _valid_opcodes = {
+			OPCODE_INVALID_CODE,
+			OPCODE_FILE_NOT_FOUND,
+			OPCODE_DOWNLOAD,
+			OPCODE_FILE,
+			OPCODE_END_OF_FILE,
+			OPCODE_GET_CHUNK,
+			OPCODE_UPLOAD_FILE
 	};
-	private static final String[] _valid_operations_str = { "INVALID_OPCODE",
-
-
-
+	
+	
+	private static final String[] _valid_operations_str = {
+			"INVALID_OPCODE",
+			"FILE_NOT_FOUND",
+			"DOWNLOAD",
+			"FILE",
+			"END_OF_FILE",
+			"GET_CHUNK",
+			"UPLOAD_FILE"
 	};
 
 	private static Map<String, Byte> _operation_to_opcode;

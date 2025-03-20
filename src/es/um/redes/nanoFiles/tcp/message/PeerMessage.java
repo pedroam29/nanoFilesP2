@@ -24,9 +24,9 @@ public class PeerMessage {
 	 * específicos para crear mensajes con otros campos, según sea necesario
 	 * 
 	 */
-
-
-
+	private byte[] hash;
+	private byte[] file_name;
+	private byte[] file_data;
 
 	public PeerMessage() {
 		opcode = PeerMessageOps.OPCODE_INVALID_CODE;
@@ -34,6 +34,20 @@ public class PeerMessage {
 
 	public PeerMessage(byte op) {
 		opcode = op;
+	}
+
+	public PeerMessage(byte op, byte[] hash, byte[] name) {
+		opcode = op;
+		this.hash = hash;
+		file_name = name;
+	}
+
+	public PeerMessage(byte op, byte[] hashOrData) {
+		opcode = op;
+		if (op == PeerMessageOps.OPCODE_FILE)
+			file_data = hashOrData;
+		else
+			hash = hashOrData;
 	}
 
 	/*
@@ -46,7 +60,33 @@ public class PeerMessage {
 		return opcode;
 	}
 
+	public byte[] getHash() {
+		return hash;
+	}
 
+	public byte[] getFile_name() {
+		return file_name;
+	}
+
+	public byte[] getFile_data() {
+		return file_data;
+	}
+
+	public void setOpcode(byte opcode) {
+		this.opcode = opcode;
+	}
+
+	public void setHash(byte[] hash) {
+		this.hash = hash;
+	}
+
+	public void setFile_name(byte[] file_name) {
+		this.file_name = file_name;
+	}
+	
+	public void setFile_data(byte[] file_data) {
+		this.file_data = file_data;
+	}
 
 
 
@@ -70,9 +110,49 @@ public class PeerMessage {
 		 */
 		PeerMessage message = new PeerMessage();
 		byte opcode = dis.readByte();
+		message.setOpcode(opcode);
+		int hashLength;
+		byte[] hashBuffer;
+		
 		switch (opcode) {
+		case PeerMessageOps.OPCODE_FILE_NOT_FOUND:
+			break;
+	
+		case PeerMessageOps.OPCODE_END_OF_FILE:
+			hashLength = dis.readInt();
+			hashBuffer = new byte[hashLength];
+			dis.readFully(hashBuffer);
+			message.setHash(hashBuffer);
+			break;
+		case PeerMessageOps.OPCODE_DOWNLOAD:
+			hashLength = dis.readInt();
+			hashBuffer = new byte[hashLength];
+			dis.readFully(hashBuffer);
+			int nameLength = dis.readInt();
+			byte[] nameBuffer = new byte[nameLength];
+			dis.readFully(nameBuffer);
+			message.setHash(hashBuffer);
+			message.setFile_name(nameBuffer);
+			break;
+		case PeerMessageOps.OPCODE_FILE:
+			int dataLength = dis.readInt();
+			byte[] dataBuffer = new byte[dataLength];
+			dis.readFully(dataBuffer);
+			message.setFile_data(dataBuffer);
+			break;
+		case PeerMessageOps.OPCODE_GET_CHUNK:
+		    long offset = dis.readLong();
+		    int chunkSize = dis.readInt();
+		    message.setOffset(offset);
+		    message.setChunkSize(chunkSize);
+		    break;
 
-
+		case PeerMessageOps.OPCODE_UPLOAD_FILE:
+		    int fileNameLength = dis.readShort();  // Se usa short (2 bytes)
+		    byte[] fileNameBuffer = new byte[fileNameLength];
+		    dis.readFully(fileNameBuffer);
+		    message.setFile_name(fileNameBuffer);
+		    break;
 
 		default:
 			System.err.println("PeerMessage.readMessageFromInputStream doesn't know how to parse this message opcode: "
@@ -93,7 +173,31 @@ public class PeerMessage {
 
 		dos.writeByte(opcode);
 		switch (opcode) {
+		case PeerMessageOps.OPCODE_FILE_NOT_FOUND:
+			break;
+		case PeerMessageOps.OPCODE_END_OF_FILE:
+			dos.writeInt(hash.length);
+			dos.write(hash);
+			break;
+		case PeerMessageOps.OPCODE_DOWNLOAD:
+			dos.writeInt(hash.length);
+			dos.write(hash);
+			dos.writeInt(file_name.length);
+			dos.write(file_name);
+			break;
+		case PeerMessageOps.OPCODE_FILE:
+			dos.writeInt(file_data.length);
+			dos.write(file_data);
+			break;
+		case PeerMessageOps.OPCODE_GET_CHUNK:
+		    dos.writeLong(offset);
+		    dos.writeInt(chunkSize);
+		    break;
 
+		case PeerMessageOps.OPCODE_UPLOAD_FILE:
+		    dos.writeShort(file_name.length);  // Se usa short (2 bytes)
+		    dos.write(file_name);
+		    break;
 
 
 
