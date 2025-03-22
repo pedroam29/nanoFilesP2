@@ -1,6 +1,8 @@
 package es.um.redes.nanoFiles.udp.message;
 
 import java.net.InetSocketAddress;
+import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 
 import es.um.redes.nanoFiles.util.FileInfo;
@@ -30,7 +32,7 @@ public class DirMessage {
 	 * (formato campo:valor)
 	 */
 	private static final String FIELDNAME_PROTOCOL = "protocol";
-
+	private static final String FIELDNAME_FILES = "files";
 
 	/**
 	 * Tipo del mensaje, de entre los tipos definidos en PeerMessageOps.
@@ -44,7 +46,7 @@ public class DirMessage {
 	 * TODO: (Boletín MensajesASCII) Crear un atributo correspondiente a cada uno de
 	 * los campos de los diferentes mensajes de este protocolo.
 	 */
-	private FileInfo[] files;
+	private List<FileInfo> files;
 	private InetSocketAddress[] serverList;
 	private int serverPort;
 	private String filenameSubstring;
@@ -63,11 +65,23 @@ public class DirMessage {
 		operation = op;
 		protocolId = idProtocol;
 	}
-	public DirMessage (String op, String idProtocol, int port, FileInfo[] filesInfo) {
+	public DirMessage (String op, String idProtocol, FileInfo[] files) {
 		operation = op;
 		protocolId = idProtocol;
-		files = filesInfo;
+		this.files = new LinkedList<FileInfo>(Arrays.asList(files));
+		//setServerPort(port); 
+		
+	}
+	public DirMessage (String op, String idProtocol, int port, FileInfo[] files) {
+		operation = op;
+		protocolId = idProtocol;
+		this.files = new LinkedList<FileInfo>(Arrays.asList(files));
 		setServerPort(port); 
+		
+	}
+	public DirMessage (String op, FileInfo[] files) {
+		operation = op;
+		this.files = new LinkedList<FileInfo>(Arrays.asList(files));
 		
 	}
 	public DirMessage (String op, String idProtocol, String filename) {
@@ -102,8 +116,26 @@ public class DirMessage {
 		return protocolId;
 	}
 
+	public FileInfo[] getFiles() {
+		if (files != null)
+			return files.toArray(new FileInfo[0]);
+		return null;
+	}
 
+	public boolean isFilesNull() {
+		if(this.files == null) {
+			return true;
+		}
+		return false;
+	}
+	
+	public void setFiles(List<FileInfo> files) {
+		this.files = files;
+	}
 
+	public void addFiles(FileInfo file) {
+		this.files.add(file);
+	}
 
 	/**
 	 * Método que convierte un mensaje codificado como una cadena de caracteres, a
@@ -144,6 +176,16 @@ public class DirMessage {
 				m.setProtocolID(value);
 				break;
 			}
+			case FIELDNAME_FILES: {
+				if (m.isFilesNull()) {
+					m.setFiles(new LinkedList<FileInfo>());
+				}
+				String[] parts = value.split(",");
+				assert (parts.length == 3);
+				FileInfo file = new FileInfo(parts[0], parts[1], Long.parseLong(parts[2]), "");
+				m.addFiles(file);
+				break;
+			}
 			default:
 				System.err.println("PANIC: DirMessage.fromString - message with unknown field name " + fieldName);
 				System.err.println("Message was:\n" + message);
@@ -156,6 +198,8 @@ public class DirMessage {
 
 		return m;
 	}
+
+	
 
 	/**
 	 * Método que devuelve una cadena de caracteres con la codificación del mensaje
@@ -178,16 +222,18 @@ public class DirMessage {
 			sb.append(FIELDNAME_PROTOCOL + DELIMITER + protocolId + END_LINE);
 			break;
 		}
+		case DirMessageOps.OPERATION_FILELIST: {
+			for (FileInfo f : this.files) {
+				sb.append(FIELDNAME_FILES + DELIMITER + f.fileHash + "," + f.fileName + "," + f.fileSize + END_LINE);
+			}
+			break;
+		}
 		}
 		sb.append(END_LINE); // Marcamos el final del mensaje
 		return sb.toString();
 	}
 
-	public FileInfo[] getFiles() {
-		if (files != null)
-			return files;
-		return null;
-	}
+	
 	
 	public InetSocketAddress[] getServerList() {
 		return serverList;

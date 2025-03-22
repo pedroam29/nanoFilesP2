@@ -101,7 +101,6 @@ public class DirectoryConnector {
 			socket.setSoTimeout(TIMEOUT); // Configurar timeout para la recepción
 			while (attempts < MAX_NUMBER_OF_ATTEMPTS && !receivedResponse) {
 				try {
-					System.out.println("Sending: " + new String(requestData));
 					socket.send(sendPacket); // Enviar datagrama
 					socket.receive(receivePacket); // Intentar recibir respuesta
 
@@ -131,7 +130,7 @@ public class DirectoryConnector {
 			System.err.println("Your response is as large as the datagram reception buffer!!\n"
 					+ "You must extract from the buffer only the bytes that belong to the datagram!");
 		}
-		System.out.println("Data received: " + new String(response));
+
 		return response;
 	}
 
@@ -233,7 +232,7 @@ public class DirectoryConnector {
 		byte[] response = sendAndReceiveDatagrams(requestData);
 		if (response != null) {
 			String responseAString = new String(response, 0, response.length);
-			System.out.println("Receiveing..." + responseAString);
+			System.out.println("Receiving..." + responseAString);
 
 			DirMessage msgFromServer = DirMessage.fromString(responseAString);
 			if (msgFromServer != null && msgFromServer.getOperation().equals(DirMessageOps.OPERATION_PING_OK)) {
@@ -279,6 +278,7 @@ public class DirectoryConnector {
 
 		return success;
 	}
+	
 
 	/**
 	 * Método para obtener la lista de ficheros que los peers servidores han
@@ -293,7 +293,7 @@ public class DirectoryConnector {
 		FileInfo[] filelist = new FileInfo[0];
 		// TODO: Ver TODOs en pingDirectory y seguir esquema similar
 
-		DirMessage getFileListMessage = new DirMessage(DirMessageOps.OPERATION_GETFILELIST, NanoFiles.PROTOCOL_ID);
+		DirMessage getFileListMessage = new DirMessage(DirMessageOps.OPERATION_FILELIST, NanoFiles.PROTOCOL_ID);
 		String getFileListMessageString = getFileListMessage.toString();
 		byte[] requestData = getFileListMessageString.getBytes();
 		byte[] response = sendAndReceiveDatagrams(requestData);
@@ -304,7 +304,7 @@ public class DirectoryConnector {
 			System.out.println("Receiveing..." + responseAString);
 			DirMessage msgFromServer = DirMessage.fromString(responseAString);
 
-			if (msgFromServer != null && msgFromServer.getOperation().equals(DirMessageOps.OPERATION_GETFILELIST_OK)) {
+			if (msgFromServer != null && msgFromServer.getOperation().equals(DirMessageOps.OPERATION_FILELIST_RESPONSE)) {
 				// Añadir elementos a filelist;
 				filelist = msgFromServer.getFiles();
 			}

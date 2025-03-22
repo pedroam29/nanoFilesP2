@@ -29,7 +29,7 @@ public class NFDirectoryServer {
 	 * funcionalidad del sistema nanoFilesP2P: ficheros publicados, servidores
 	 * registrados, etc.
 	 */
-	private HashMap<String, LinkedList<InetSocketAddress>> ficherosPublicados;
+	private HashMap<Integer, FileInfo[]> files;
 	private LinkedList<InetSocketAddress> servidoresRegistrados;
 	
 
@@ -55,7 +55,7 @@ public class NFDirectoryServer {
 		 * TODO: (Boletín SocketsUDP) Inicializar atributos que mantienen el estado del
 		 * servidor de directorio: ficheros, etc.)
 		 */
-		ficherosPublicados = new HashMap<>();
+		files = new HashMap<>();
 		servidoresRegistrados = new LinkedList<>();
 
 		if (NanoFiles.testModeUDP) {
@@ -247,6 +247,20 @@ public class NFDirectoryServer {
 			 */
 			System.out.println("Ping...received ProtocolId: " + protocolId);
 
+			break;
+		}
+		case DirMessageOps.OPERATION_FILELIST: {
+			int totalSize = 0;
+			for (FileInfo[] fileInfos : files.values()) {
+				totalSize += fileInfos.length;
+			}
+			FileInfo[] allFiles = new FileInfo[totalSize];
+			int currentIndex = 0;
+			for (FileInfo[] fileInfos : files.values()) {
+				System.arraycopy(fileInfos, 0, allFiles, currentIndex, fileInfos.length);
+				currentIndex += fileInfos.length;
+			}
+			msgToSend = new DirMessage(DirMessageOps.OPERATION_FILELIST_RESPONSE, allFiles);
 			break;
 		}
 

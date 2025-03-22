@@ -143,8 +143,8 @@ public class PeerMessage {
 		case PeerMessageOps.OPCODE_GET_CHUNK:
 		    long offset = dis.readLong();
 		    int chunkSize = dis.readInt();
-		    message.setOffset(offset);
-		    message.setChunkSize(chunkSize);
+		//    message.setOffset(offset);
+		//    message.setChunkSize(chunkSize);
 		    break;
 
 		case PeerMessageOps.OPCODE_UPLOAD_FILE:
@@ -190,8 +190,8 @@ public class PeerMessage {
 			dos.write(file_data);
 			break;
 		case PeerMessageOps.OPCODE_GET_CHUNK:
-		    dos.writeLong(offset);
-		    dos.writeInt(chunkSize);
+		 //   dos.writeLong(offset);
+		  //  dos.writeInt(chunkSize);
 		    break;
 
 		case PeerMessageOps.OPCODE_UPLOAD_FILE:

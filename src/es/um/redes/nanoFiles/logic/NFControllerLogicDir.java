@@ -139,6 +139,7 @@ public class NFControllerLogicDir {
 		return result;
 	}
 
+
 	/**
 	 * Método para consultar al directorio las direcciones de socket de los
 	 * servidores que tienen un determinado fichero identificado por una subcadena
