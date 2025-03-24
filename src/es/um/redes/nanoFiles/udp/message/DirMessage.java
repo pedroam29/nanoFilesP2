@@ -32,10 +32,9 @@ public class DirMessage {
 	 * (formato campo:valor)
 	 */
 	private static final String FIELDNAME_PROTOCOL = "protocol";
-<<<<<<< HEAD
-=======
+
 	private static final String FIELDNAME_FILES = "files";
->>>>>>> branch 'master' of https://github.com/pedroam29/nanoFilesP2.git
+
 
 	/**
 	 * Tipo del mensaje, de entre los tipos definidos en PeerMessageOps.
@@ -175,9 +174,6 @@ public class DirMessage {
 				m = new DirMessage(value);
 				break;
 			}
-<<<<<<< HEAD
-			
-=======
 			case FIELDNAME_PROTOCOL:{
 				m.setProtocolID(value);
 				break;
@@ -192,7 +188,6 @@ public class DirMessage {
 				m.addFiles(file);
 				break;
 			}
->>>>>>> branch 'master' of https://github.com/pedroam29/nanoFilesP2.git
 			default:
 				System.err.println("PANIC: DirMessage.fromString - message with unknown field name " + fieldName);
 				System.err.println("Message was:\n" + message);
@@ -229,7 +224,7 @@ public class DirMessage {
 			sb.append(FIELDNAME_PROTOCOL + DELIMITER + protocolId + END_LINE);
 			break;
 		}
-		case DirMessageOps.OPERATION_FILELIST: {
+		case DirMessageOps.OPERATION_FILELIST_RESPONSE: {
 			for (FileInfo f : this.files) {
 				sb.append(FIELDNAME_FILES + DELIMITER + f.fileHash + "," + f.fileName + "," + f.fileSize + END_LINE);
 			}

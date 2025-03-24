@@ -249,10 +249,14 @@ public class NFDirectoryServer {
 
 			break;
 		}
-<<<<<<< HEAD
+
 		
-=======
+
 		case DirMessageOps.OPERATION_FILELIST: {
+			if(this.files.isEmpty()) {
+				msgToSend = new DirMessage(DirMessageOps.OPERATION_FILELIST_RESPONSE, new FileInfo[0]); // Enviar lista vacía
+				break;
+			}
 			int totalSize = 0;
 			for (FileInfo[] fileInfos : files.values()) {
 				totalSize += fileInfos.length;
@@ -266,7 +270,7 @@ public class NFDirectoryServer {
 			msgToSend = new DirMessage(DirMessageOps.OPERATION_FILELIST_RESPONSE, allFiles);
 			break;
 		}
->>>>>>> branch 'master' of https://github.com/pedroam29/nanoFilesP2.git
+
 
 		default:
 			System.err.println("Unexpected message operation: \"" + operation + "\"");
