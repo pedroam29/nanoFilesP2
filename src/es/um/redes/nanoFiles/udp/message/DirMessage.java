@@ -31,7 +31,6 @@ public class DirMessage {
 	 */
 	private static final String FIELDNAME_PROTOCOL = "protocol";
 
-
 	/**
 	 * Tipo del mensaje, de entre los tipos definidos en PeerMessageOps.
 	 */
@@ -140,10 +139,7 @@ public class DirMessage {
 				m = new DirMessage(value);
 				break;
 			}
-			case FIELDNAME_PROTOCOL:{
-				m.setProtocolID(value);
-				break;
-			}
+			
 			default:
 				System.err.println("PANIC: DirMessage.fromString - message with unknown field name " + fieldName);
 				System.err.println("Message was:\n" + message);

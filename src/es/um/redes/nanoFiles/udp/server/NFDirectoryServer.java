@@ -249,6 +249,7 @@ public class NFDirectoryServer {
 
 			break;
 		}
+		
 
 		default:
 			System.err.println("Unexpected message operation: \"" + operation + "\"");
