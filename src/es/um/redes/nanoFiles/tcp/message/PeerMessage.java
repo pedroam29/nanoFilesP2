@@ -14,9 +14,6 @@ import es.um.redes.nanoFiles.util.FileInfo;
 
 public class PeerMessage {
 
-
-
-
 	private byte opcode;
 
 	/*
@@ -24,9 +21,14 @@ public class PeerMessage {
 	 * específicos para crear mensajes con otros campos, según sea necesario
 	 * 
 	 */
-	private byte[] hash;
-	private byte[] file_name;
-	private byte[] file_data;
+	// Campos comunes a algunos mensajes TLV.
+	private byte[] hash; // Por ejemplo, usado en OPCODE_END_OF_FILE y OPCODE_DOWNLOAD.
+	private byte[] file_name; // Para OPCODE_DOWNLOAD y OPCODE_UPLOAD_FILE.
+	private byte[] file_data; // Para OPCODE_FILE.
+
+	// Campos para mensajes de operaciones (ej. GetChunk).
+	private long offset; // Desplazamiento (8 bytes) para OPCODE_GET_CHUNK.
+	private int chunkSize; // Tamaño del fragmento (4 bytes) para OPCODE_GET_CHUNKV
 
 	public PeerMessage() {
 		opcode = PeerMessageOps.OPCODE_INVALID_CODE;
@@ -39,7 +41,7 @@ public class PeerMessage {
 	public PeerMessage(byte op, byte[] hash, byte[] name) {
 		opcode = op;
 		this.hash = hash;
-		file_name = name;
+		this.file_name = name;
 	}
 
 	public PeerMessage(byte op, byte[] hashOrData) {
@@ -50,45 +52,67 @@ public class PeerMessage {
 			hash = hashOrData;
 	}
 
+	// Constructor para mensajes de operación (GetChunk).
+	public PeerMessage(byte op, long offset, int chunkSize) {
+		opcode = op;
+		this.offset = offset;
+		this.chunkSize = chunkSize;
+	}
+
 	/*
 	 * TODO: (Boletín MensajesBinarios) Crear métodos getter y setter para obtener
 	 * los valores de los atributos de un mensaje. Se aconseja incluir código que
 	 * compruebe que no se modifica/obtiene el valor de un campo (atributo) que no
 	 * esté definido para el tipo de mensaje dado por "operation".
 	 */
+	// Getters y Setters
 	public byte getOpcode() {
 		return opcode;
-	}
-
-	public byte[] getHash() {
-		return hash;
-	}
-
-	public byte[] getFile_name() {
-		return file_name;
-	}
-
-	public byte[] getFile_data() {
-		return file_data;
 	}
 
 	public void setOpcode(byte opcode) {
 		this.opcode = opcode;
 	}
 
+	public byte[] getHash() {
+		return hash;
+	}
+
 	public void setHash(byte[] hash) {
 		this.hash = hash;
+	}
+
+	public byte[] getFile_name() {
+		return file_name;
 	}
 
 	public void setFile_name(byte[] file_name) {
 		this.file_name = file_name;
 	}
-	
+
+	public byte[] getFile_data() {
+		return file_data;
+	}
+
 	public void setFile_data(byte[] file_data) {
 		this.file_data = file_data;
 	}
 
+	public long getOffset() {
+		return offset;
+	}
 
+	public void setOffset(long offset) {
+		this.offset = offset;
+	}
+
+	public int getChunkSize() {
+		return chunkSize;
+	}
+
+	public void setChunkSize(int chunkSize) {
+		this.chunkSize = chunkSize;
+	}
 
 	/**
 	 * Método de clase para parsear los campos de un mensaje y construir el objeto
@@ -100,59 +124,58 @@ public class PeerMessage {
 	 * @throws IOException
 	 */
 	public static PeerMessage readMessageFromInputStream(DataInputStream dis) throws IOException {
-		/*
-		 * TODO: (Boletín MensajesBinarios) En función del tipo de mensaje, leer del
-		 * socket a través del "dis" el resto de campos para ir extrayendo con los
-		 * valores y establecer los atributos del un objeto DirMessage que contendrá
-		 * toda la información del mensaje, y que será devuelto como resultado. NOTA:
-		 * Usar dis.readFully para leer un array de bytes, dis.readInt para leer un
-		 * entero, etc.
-		 */
 		PeerMessage message = new PeerMessage();
 		byte opcode = dis.readByte();
 		message.setOpcode(opcode);
-		int hashLength;
-		byte[] hashBuffer;
-		
+
 		switch (opcode) {
 		case PeerMessageOps.OPCODE_FILE_NOT_FOUND:
+			// Mensaje de control: No se requiere leer más datos.
 			break;
-	
+
 		case PeerMessageOps.OPCODE_END_OF_FILE:
-			hashLength = dis.readInt();
-			hashBuffer = new byte[hashLength];
+			// Formato TLV: [Opcode][Int:hashLength][byte[]:hash]
+			int hashLength = dis.readInt();
+			byte[] hashBuffer = new byte[hashLength];
 			dis.readFully(hashBuffer);
 			message.setHash(hashBuffer);
 			break;
 		case PeerMessageOps.OPCODE_DOWNLOAD:
+			// Formato TLV:
+			// [Opcode][Int:hashLength][byte[]:hash][Int:nameLength][byte[]:file_name]
 			hashLength = dis.readInt();
 			hashBuffer = new byte[hashLength];
 			dis.readFully(hashBuffer);
+			message.setHash(hashBuffer);
+
 			int nameLength = dis.readInt();
 			byte[] nameBuffer = new byte[nameLength];
 			dis.readFully(nameBuffer);
-			message.setHash(hashBuffer);
 			message.setFile_name(nameBuffer);
 			break;
 		case PeerMessageOps.OPCODE_FILE:
+			// Formato TLV: [Opcode][Int:dataLength][byte[]:file_data]
 			int dataLength = dis.readInt();
 			byte[] dataBuffer = new byte[dataLength];
 			dis.readFully(dataBuffer);
 			message.setFile_data(dataBuffer);
 			break;
+
 		case PeerMessageOps.OPCODE_GET_CHUNK:
-		    long offset = dis.readLong();
-		    int chunkSize = dis.readInt();
-		//    message.setOffset(offset);
-		//    message.setChunkSize(chunkSize);
-		    break;
+			// Formato Operaciones: [Opcode][long:offset][int:chunkSize]
+			long offset = dis.readLong();
+			int chunkSize = dis.readInt();
+			message.setOffset(offset);
+			message.setChunkSize(chunkSize);
+			break;
 
 		case PeerMessageOps.OPCODE_UPLOAD_FILE:
-		    int fileNameLength = dis.readShort();  // Se usa short (2 bytes)
-		    byte[] fileNameBuffer = new byte[fileNameLength];
-		    dis.readFully(fileNameBuffer);
-		    message.setFile_name(fileNameBuffer);
-		    break;
+			// Formato TLV: [Opcode][short:nameLength][byte[]:file_name]
+			int fileNameLength = dis.readShort();
+			byte[] fileNameBuffer = new byte[fileNameLength];
+			dis.readFully(fileNameBuffer);
+			message.setFile_name(fileNameBuffer);
+			break;
 
 		default:
 			System.err.println("PeerMessage.readMessageFromInputStream doesn't know how to parse this message opcode: "
@@ -174,40 +197,45 @@ public class PeerMessage {
 		dos.writeByte(opcode);
 		switch (opcode) {
 		case PeerMessageOps.OPCODE_FILE_NOT_FOUND:
+			// Mensaje de control: Solo se escribe el opcode.
 			break;
+
 		case PeerMessageOps.OPCODE_END_OF_FILE:
+			// [Opcode][Int:hashLength][byte[]:hash]
 			dos.writeInt(hash.length);
 			dos.write(hash);
 			break;
+
 		case PeerMessageOps.OPCODE_DOWNLOAD:
+			// [Opcode][Int:hashLength][byte[]:hash][Int:nameLength][byte[]:file_name]
 			dos.writeInt(hash.length);
 			dos.write(hash);
 			dos.writeInt(file_name.length);
 			dos.write(file_name);
 			break;
+
 		case PeerMessageOps.OPCODE_FILE:
+			// [Opcode][Int:dataLength][byte[]:file_data]
 			dos.writeInt(file_data.length);
 			dos.write(file_data);
 			break;
+
 		case PeerMessageOps.OPCODE_GET_CHUNK:
-		 //   dos.writeLong(offset);
-		  //  dos.writeInt(chunkSize);
-		    break;
+			// [Opcode][long:offset][int:chunkSize]
+			dos.writeLong(offset);
+			dos.writeInt(chunkSize);
+			break;
 
 		case PeerMessageOps.OPCODE_UPLOAD_FILE:
-		    dos.writeShort(file_name.length);  // Se usa short (2 bytes)
-		    dos.write(file_name);
-		    break;
-
-
+			// [Opcode][short:fileNameLength][byte[]:file_name]
+			dos.writeShort(file_name.length);
+			dos.write(file_name);
+			break;
 
 		default:
 			System.err.println("PeerMessage.writeMessageToOutputStream found unexpected message opcode " + opcode + "("
 					+ PeerMessageOps.opcodeToOperation(opcode) + ")");
 		}
 	}
-
-
-
 
 }

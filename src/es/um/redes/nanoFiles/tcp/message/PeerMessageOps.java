@@ -19,7 +19,6 @@ public class PeerMessageOps {
 	public static final byte OPCODE_UPLOAD_FILE = 6;
 
 
-
 	/*
 	 * TODO: (Boletín MensajesBinarios) Definir constantes con nuevos opcodes de
 	 * mensajes definidos anteriormente, añadirlos al array "valid_opcodes" y añadir
