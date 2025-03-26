@@ -249,9 +249,7 @@ public class NFDirectoryServer {
 
 			break;
 		}
-<<<<<<< HEAD
 		
-=======
 		case DirMessageOps.OPERATION_FILELIST: {
 			int totalSize = 0;
 			for (FileInfo[] fileInfos : files.values()) {
@@ -266,7 +264,6 @@ public class NFDirectoryServer {
 			msgToSend = new DirMessage(DirMessageOps.OPERATION_FILELIST_RESPONSE, allFiles);
 			break;
 		}
->>>>>>> branch 'master' of https://github.com/pedroam29/nanoFilesP2.git
 
 		default:
 			System.err.println("Unexpected message operation: \"" + operation + "\"");
