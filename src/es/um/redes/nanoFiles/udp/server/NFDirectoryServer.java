@@ -1,5 +1,6 @@
 package es.um.redes.nanoFiles.udp.server;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -269,6 +270,33 @@ public class NFDirectoryServer {
 			}
 			msgToSend = new DirMessage(DirMessageOps.OPERATION_FILELIST_RESPONSE, allFiles);
 			break;
+		}
+		case DirMessageOps.OPERATION_SERVE: {
+			// Obtener la ruta completa de la carpeta compartida
+		    String sharedFolderPath = NanoFiles.sharedDirname; 
+		    // Obtener la lista de archivos en la carpeta compartida en nuestro caso nf-shared
+		    File sharedFolder = new File(sharedFolderPath);
+		    FileInfo[] files = null;
+		    if (sharedFolder.exists() && sharedFolder.isDirectory()) {
+		        files = FileInfo.loadFilesFromFolder(sharedFolderPath);
+		    } else {
+		        System.err.println("* La carpeta compartida no existe o no es una carpeta válida.");
+		    }
+
+		    if (files != null && files.length > 0) {
+		        System.out.println("* Archivos publicados:");
+		        for (FileInfo file : files) {
+		            System.out.println("*- " + file);
+		        }
+		    } else {
+		        System.out.println("* No se han encontrado archivos para publicar en la carpeta compartida.");
+		    }
+
+		    // Construir un mensaje de respuesta indicando si la publicación fue exitosa
+		    msgToSend = new DirMessage(DirMessageOps.OPERATION_SERVE_RESPONSE);
+		    // Aquí lo que se hace es poner la respuesta del Publish a true en el caso en el que encuentre algún fichero compatible
+		    msgToSend.setPublishResponse(files != null && files.length > 0); 
+		    break;
 		}
 
 
