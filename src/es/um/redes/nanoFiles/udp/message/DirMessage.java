@@ -32,8 +32,13 @@ public class DirMessage {
 	 * (formato campo:valor)
 	 */
 	private static final String FIELDNAME_PROTOCOL = "protocol";
-	private static final String FIELDNAME_FILES = "files";
 
+	private static final String FIELDNAME_FILES = "files";
+	private static final String FIELDNAME_HASH = "hash";
+	private static final String FIELDNAME_PORT = "port";
+	private static final String FIELDNAME_SERVE_RESPONSE = "serveResponse";
+	private static final String FIELDNAME_SERVE = "serve";
+	
 	/** 
 	 * Tipo del mensaje, de entre los tipos definidos en PeerMessageOps.
 	 */
@@ -46,10 +51,13 @@ public class DirMessage {
 	 * TODO: (Boletín MensajesASCII) Crear un atributo correspondiente a cada uno de
 	 * los campos de los diferentes mensajes de este protocolo.
 	 */
-	private List<FileInfo> files;
+	private FileInfo[] files;
+	private String hash;
+	private int port;
 	private InetSocketAddress[] serverList;
 	private int serverPort;
 	private String filenameSubstring;
+	private boolean publishResponse;
 	
 	public DirMessage(String op) {
 		operation = op;
@@ -68,20 +76,19 @@ public class DirMessage {
 	public DirMessage (String op, String idProtocol, FileInfo[] files) {
 		operation = op;
 		protocolId = idProtocol;
-		this.files = new LinkedList<FileInfo>(Arrays.asList(files));
-		//setServerPort(port); 
+		this.files = new FileInfo[0]; 
 		
 	}
 	public DirMessage (String op, String idProtocol, int port, FileInfo[] files) {
 		operation = op;
 		protocolId = idProtocol;
-		this.files = new LinkedList<FileInfo>(Arrays.asList(files));
+		this.files = new FileInfo[0]; 
 		setServerPort(port); 
 		
 	}
 	public DirMessage (String op, FileInfo[] files) {
 		operation = op;
-		this.files = new LinkedList<FileInfo>(Arrays.asList(files));
+		this.files = new FileInfo[0]; 
 		
 	}
 	public DirMessage (String op, String idProtocol, String filename) {
@@ -117,11 +124,13 @@ public class DirMessage {
 	}
 
 	public FileInfo[] getFiles() {
-		if (files != null)
-			return files.toArray(new FileInfo[0]);
-		return null;
+		return files;
 	}
-
+	
+	public void setFiles(FileInfo[] files) {
+		this.files = files;
+	}
+	
 	public boolean isFilesNull() {
 		if(this.files == null) {
 			return true;
@@ -129,14 +138,29 @@ public class DirMessage {
 		return false;
 	}
 	
-	public void setFiles(List<FileInfo> files) {
-		this.files = files;
+	
+	public void setHash(String hash) {
+		this.hash = hash;
 	}
 
-	public void addFiles(FileInfo file) {
-		this.files.add(file);
+	public String getHash() {
+		return hash;
+	}
+	
+	public void setPort(int port) {
+		this.port = port;
 	}
 
+	public int getPort() {
+		return port;
+	} 
+	public boolean isPublishResponse() {
+        return publishResponse;
+    }
+	public void setPublishResponse(boolean publishResponse) {
+        this.publishResponse = publishResponse;
+    }
+	
 	/**
 	 * Método que convierte un mensaje codificado como una cadena de caracteres, a
 	 * un objeto de la clase PeerMessage, en el cual los atributos correspondientes
@@ -178,15 +202,50 @@ public class DirMessage {
 				break;
 			}
 			case FIELDNAME_FILES: {
-				if (m.isFilesNull()) {
-					m.setFiles(new LinkedList<FileInfo>());
-				}
-				String[] parts = value.split(",");
-				assert (parts.length == 3);
-				FileInfo file = new FileInfo(parts[0], parts[1], Long.parseLong(parts[2]), "");
-				m.addFiles(file);
+				assert (m.getOperation().equals(DirMessageOps.OPERATION_FILELIST));
+			    // Divide la cadena de archivos en partes separadas por el delimitador
+			    String[] fileInfos = value.split("; ");
+			    // Crea un array de FileInfo para almacenar los detalles de los archivos
+			    FileInfo[] files = new FileInfo[fileInfos.length];
+			    // Para cada cadena de archivo, divide los detalles en partes separadas por ", "
+			    for (int i = 0; i < fileInfos.length; i++) {
+			        String[] fileInfoParts = fileInfos[i].split(", ");
+			        // El primer elemento es el nombre del archivo
+			        String name = fileInfoParts[0];
+			        // Si hay más elementos, el segundo es el tamaño y el tercero es el hash
+			        long size = 0;
+			        String hash = "";
+			        if (fileInfoParts.length > 1) {
+			            // Extrae el tamaño y el hash si están disponibles
+			            size = Long.parseLong(fileInfoParts[1].replace(" bytes", ""));
+			            hash = fileInfoParts[2];
+			        }
+			        // Crea un nuevo objeto FileInfo con el nombre y los detalles opcionales
+			        files[i] = new FileInfo(hash,name, size, " ");
+			    }
+			    m.setFiles(files);
+			    
+			    break; 
+			}
+			case FIELDNAME_HASH: {
+				m.setHash(value);
 				break;
 			}
+
+			case FIELDNAME_PORT: {
+				m.setPort(Integer.parseInt(value));
+				break;
+			}
+			case FIELDNAME_SERVE: {
+			    assert (m.getOperation().equals(DirMessageOps.OPERATION_SERVE));
+			    m.setFiles(FileInfo.loadFilesFromFolder(value));
+			    break;
+			}
+			case FIELDNAME_SERVE_RESPONSE: {
+                assert (m.getOperation().equals(DirMessageOps.OPERATION_SERVE_RESPONSE));
+                m.setPublishResponse(Boolean.parseBoolean(value));
+                break;
+            }
 			default:
 				System.err.println("PANIC: DirMessage.fromString - message with unknown field name " + fieldName);
 				System.err.println("Message was:\n" + message);
@@ -223,11 +282,15 @@ public class DirMessage {
 			sb.append(FIELDNAME_PROTOCOL + DELIMITER + protocolId + END_LINE);
 			break;
 		}
-		case DirMessageOps.OPERATION_FILELIST: {
+		case DirMessageOps.OPERATION_FILELIST_RESPONSE: {
 			for (FileInfo f : this.files) {
 				sb.append(FIELDNAME_FILES + DELIMITER + f.fileHash + "," + f.fileName + "," + f.fileSize + END_LINE);
 			}
 			break;
+		}
+		case DirMessageOps.OPERATION_SERVE_RESPONSE: {
+			//Le devuelve una respuesta en funcion de si ha sido o no un exito la publicacion de ficheros
+            sb.append(FIELDNAME_SERVE_RESPONSE+ DELIMITER + publishResponse + END_LINE);
 		}
 		}
 		sb.append(END_LINE); // Marcamos el final del mensaje
