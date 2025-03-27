@@ -1,6 +1,9 @@
 package es.um.redes.nanoFiles.tcp.server;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -19,14 +22,14 @@ public class NFServer implements Runnable {
 		/*
 		 * TODO: (Boletín SocketsTCP) Crear una direción de socket a partir del puerto
 		 * especificado (PORT)
-		 */
+		 */	
+		InetSocketAddress serverSocketAddres = new InetSocketAddress(PORT);
 		/*
 		 * TODO: (Boletín SocketsTCP) Crear un socket servidor y ligarlo a la dirección
 		 * de socket anterior
 		 */
-
-
-
+		serverSocket = new ServerSocket();
+		serverSocket.bind(serverSocketAddres);
 	}
 
 	/**
@@ -50,6 +53,18 @@ public class NFServer implements Runnable {
 			 * TODO: (Boletín SocketsTCP) Usar el socket servidor para esperar conexiones de
 			 * otros peers que soliciten descargar ficheros.
 			 */
+			boolean connectionOk = false;
+			Socket socket = null;
+			
+			try {
+				socket = serverSocket.accept();
+				connectionOk = true;
+			}
+			catch (Exception e) {
+				System.err.println("Connection refused");
+
+			}
+			
 			/*
 			 * TODO: (Boletín SocketsTCP) Tras aceptar la conexión con un peer cliente, la
 			 * comunicación con dicho cliente para servir los ficheros solicitados se debe
@@ -57,7 +72,25 @@ public class NFServer implements Runnable {
 			 * socket devuelto por accept.
 			 */
 
-			
+			if (connectionOk) {
+				
+				try {
+					
+					DataInputStream dis = new DataInputStream(socket.getInputStream());
+					DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
+					int integerRecived = dis.readInt();
+					System.out.println("Entero recibido");
+					int integertosend = integerRecived +1;
+					dos.writeInt(integertosend);
+					System.out.println("Entero enviado");
+				}			
+				catch (Exception e) {
+
+				}
+
+				
+			}
+
 
 		}
 	}
