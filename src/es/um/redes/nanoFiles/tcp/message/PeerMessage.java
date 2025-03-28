@@ -124,6 +124,14 @@ public class PeerMessage {
 	 * @throws IOException
 	 */
 	public static PeerMessage readMessageFromInputStream(DataInputStream dis) throws IOException {
+		/*
+		 * TODO: (Boletín MensajesBinarios) En función del tipo de mensaje, leer del
+		 * socket a través del "dis" el resto de campos para ir extrayendo con los
+		 * valores y establecer los atributos del un objeto DirMessage que contendrá
+		 * toda la información del mensaje, y que será devuelto como resultado. NOTA:
+		 * Usar dis.readFully para leer un array de bytes, dis.readInt para leer un
+		 * entero, etc.
+		 */
 		PeerMessage message = new PeerMessage();
 		byte opcode = dis.readByte();
 		message.setOpcode(opcode);

@@ -1,6 +1,7 @@
 package es.um.redes.nanoFiles.logic;
 
 import java.net.InetSocketAddress;
+import java.io.File;
 import java.io.IOException;
 import es.um.redes.nanoFiles.tcp.client.NFConnector;
 import es.um.redes.nanoFiles.application.NanoFiles;
@@ -41,17 +42,27 @@ public class NFControllerLogicP2P {
 			System.err.println("File server is already running");
 		} else {
 
-			/*
-			 * TODO: (Boletín Servidor TCP concurrente) Arrancar servidor en segundo plano
-			 * creando un nuevo hilo, comprobar que el servidor está escuchando en un puerto
-			 * válido (>0), imprimir mensaje informando sobre el puerto de escucha, y
-			 * devolver verdadero. Las excepciones que puedan lanzarse deben ser capturadas
-			 * y tratadas en este método. Si se produce una excepción de entrada/salida
-			 * (error del que no es posible recuperarse), se debe informar sin abortar el
-			 * programa
-			 * 
-			 */
+			// 2. Crear y lanzar un hilo para el servidor en segundo plano
+			Thread serverThread = new Thread(() -> {
+			    try {
+			        fileServer = new NFServer(); // Instanciar el servidor
+			        fileServer.startServer(); // Iniciar el servidor (debe contener el ServerSocket)
+			    } catch (IOException e) {
+			        System.err.println("Error al iniciar el servidor: " + e.getMessage());
+			    }
+			});
 
+			serverThread.setDaemon(true); // Hacer que el hilo del servidor termine cuando el programa finaliza
+			serverThread.start(); // Iniciar el hilo
+
+			// 3. Comprobar que el puerto es válido
+			int port = fileServer.getPort(); // Método que devuelve el puerto en el que escucha el servidor
+			if (port > 0) {
+			    System.out.println("Servidor iniciado en el puerto: " + port);
+			    serverRunning = true;
+			} else {
+			    System.err.println("Error: puerto no válido.");
+			}
 
 
 		}
@@ -140,9 +151,52 @@ public class NFControllerLogicP2P {
 		 * posible recuperarse), se debe informar sin abortar el programa
 		 */
 
+		//Inicializacion
+				NFConnector srvConnection;
+				File f = new File(NanoFiles.sharedDirname + "/" + localFileName);
 
-
-
+				
+				//Comprobamos si el fichero donde se guardará el contenido descargado existe. En ese caso devuelve falso.
+				if(f.exists()) {
+					System.err.println("* Error: The destination file already exists*");
+					return false;
+				} 
+				
+				//Fichero destino no existe. Se intenta crear.
+				else {
+					try {
+						f.createNewFile();
+					} catch (IOException e) {
+						System.err.println("*Error trying to create destination file ");
+						return false;
+					}
+				
+				
+					
+				//Para cada direccion de un servidor de ficheros se trata de establecer conexión con este para la descarga del fichero.
+				
+				
+				int n = 1;
+				int nservers = serverAddressList.length;
+				for (InetSocketAddress server : serverAddressList) {
+					
+					try {
+						srvConnection = new NFConnector(server);
+						downloaded = srvConnection.downloadFileChunk(targetFileNameSubstring, f, n, nservers);
+						if (!downloaded) {
+							System.out.println("Error downloading the file");
+							f.delete();
+							return false;
+						}
+					} catch (IOException e) {
+						System.out.println("* Error trying to establish connection with server " + server.toString() );
+						f.delete();
+						return false;	
+					}
+					n++;
+					}
+				
+				}
 		return downloaded;
 	}
 
@@ -152,14 +206,7 @@ public class NFControllerLogicP2P {
 	 * @return El puerto en el que escucha el servidor, o 0 en caso de error.
 	 */
 	protected int getServerPort() {
-		int port = 0;
-		/*
-		 * TODO: Devolver el puerto de escucha de nuestro servidor de ficheros
-		 */
-
-
-
-		return port;
+		return fileServer.getPort();
 	}
 
 	/**
@@ -170,7 +217,8 @@ public class NFControllerLogicP2P {
 		/*
 		 * TODO: Enviar señal para detener nuestro servidor de ficheros en segundo plano
 		 */
-
+		this.fileServer.stopserver();
+		this.fileServer = null;
 
 
 	}

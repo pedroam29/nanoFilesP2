@@ -17,6 +17,7 @@ public class NFServer implements Runnable {
 
 
 	private ServerSocket serverSocket = null;
+	private boolean stopServer = false;
 
 	public NFServer() throws IOException {
 		/*
@@ -131,7 +132,24 @@ public class NFServer implements Runnable {
 	 * servidor (stopserver) 3) Obtener el puerto de escucha del servidor etc.
 	 */
 
-
+	public void startServer() {
+		new Thread(this).start(); 
+	}
+	public void stopserver() {
+		 stopServer = true;
+	        try {
+	        	
+	            serverSocket.close();
+	            System.out.println("* Servidor detenido.");
+	        } catch (IOException e) {
+	            System.err.println("* Error al detener el servidor: " + e.getMessage());
+	            e.printStackTrace();
+	        }
+	}
+	
+	public int getPort() {
+		return serverSocket.getLocalPort();
+	}
 
 
 	/**
