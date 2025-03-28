@@ -256,12 +256,11 @@ public class DirectoryConnector {
 		boolean success = false;
 
 		// TODO: Ver TODOs en pingDirectory y seguir esquema similar
-		DirMessage msgToSend = new DirMessage(DirMessageOps.OPERATION_SERVE,
-				NanoFiles.PROTOCOL_ID, serverPort, files);
+		DirMessage msgToSend = new DirMessage(DirMessageOps.OPERATION_SERVE, NanoFiles.PROTOCOL_ID, serverPort, files);
 		String msgToSendString = msgToSend.toString();
 		byte[] requestData = msgToSendString.getBytes();
 		byte[] response = sendAndReceiveDatagrams(requestData);
-		
+
 		if (response != null) {
 
 			String responseAString = new String(response, 0, response.length);
@@ -278,7 +277,6 @@ public class DirectoryConnector {
 
 		return success;
 	}
-	
 
 	/**
 	 * Método para obtener la lista de ficheros que los peers servidores han
@@ -304,7 +302,8 @@ public class DirectoryConnector {
 			System.out.println("Receiving..." + responseAString);
 			DirMessage msgFromServer = DirMessage.fromString(responseAString);
 
-			if (msgFromServer != null && msgFromServer.getOperation().equals(DirMessageOps.OPERATION_FILELIST_RESPONSE)) {
+			if (msgFromServer != null
+					&& msgFromServer.getOperation().equals(DirMessageOps.OPERATION_FILELIST_RESPONSE)) {
 				// Añadir elementos a filelist;
 				filelist = msgFromServer.getFiles();
 			}
@@ -327,8 +326,9 @@ public class DirectoryConnector {
 	public InetSocketAddress[] getServersSharingThisFile(String filenameSubstring) {
 		// TODO: Ver TODOs en pingDirectory y seguir esquema similar
 		InetSocketAddress[] serversList = new InetSocketAddress[0];
-		
-		DirMessage getFileListMessage = new DirMessage(DirMessageOps.OPERATION_DOWNLOAD, NanoFiles.PROTOCOL_ID, filenameSubstring );
+
+		DirMessage getFileListMessage = new DirMessage(DirMessageOps.OPERATION_DOWNLOAD, NanoFiles.PROTOCOL_ID,
+				filenameSubstring);
 		String getFileListMessageString = getFileListMessage.toString();
 		byte[] requestData = getFileListMessageString.getBytes();
 		byte[] response = sendAndReceiveDatagrams(requestData);
@@ -346,7 +346,6 @@ public class DirectoryConnector {
 			}
 
 		}
-		
 
 		return serversList;
 	}

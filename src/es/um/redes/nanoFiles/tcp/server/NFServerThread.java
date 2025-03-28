@@ -10,6 +10,15 @@ public class NFServerThread extends Thread {
 	 * (un socket distinto para "conversar" con un cliente)
 	 */
 
+	private Socket socket;
+	public NFServerThread(Socket socket) {
+		this.socket=socket;
+	}
+	
+	@Override
+	public void run() {
+		NFServer.serveFilesToClient(socket);
+	}
 
 
 

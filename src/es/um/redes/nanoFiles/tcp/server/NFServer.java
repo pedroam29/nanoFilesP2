@@ -2,19 +2,22 @@ package es.um.redes.nanoFiles.tcp.server;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-
-
+import es.um.redes.nanoFiles.application.NanoFiles;
+import es.um.redes.nanoFiles.tcp.message.PeerMessage;
+import es.um.redes.nanoFiles.tcp.message.PeerMessageOps;
+import es.um.redes.nanoFiles.util.FileInfo;
 
 public class NFServer implements Runnable {
 
 	public static final int PORT = 10000;
-
-
 
 	private ServerSocket serverSocket = null;
 	private boolean stopServer = false;
@@ -23,7 +26,7 @@ public class NFServer implements Runnable {
 		/*
 		 * TODO: (Boletín SocketsTCP) Crear una direción de socket a partir del puerto
 		 * especificado (PORT)
-		 */	
+		 */
 		InetSocketAddress serverSocketAddres = new InetSocketAddress(PORT);
 		/*
 		 * TODO: (Boletín SocketsTCP) Crear un socket servidor y ligarlo a la dirección
@@ -56,16 +59,15 @@ public class NFServer implements Runnable {
 			 */
 			boolean connectionOk = false;
 			Socket socket = null;
-			
+
 			try {
 				socket = serverSocket.accept();
 				connectionOk = true;
-			}
-			catch (Exception e) {
+			} catch (Exception e) {
 				System.err.println("Connection refused");
 
 			}
-			
+
 			/*
 			 * TODO: (Boletín SocketsTCP) Tras aceptar la conexión con un peer cliente, la
 			 * comunicación con dicho cliente para servir los ficheros solicitados se debe
@@ -74,24 +76,21 @@ public class NFServer implements Runnable {
 			 */
 
 			if (connectionOk) {
-				
+
 				try {
-					
+
 					DataInputStream dis = new DataInputStream(socket.getInputStream());
 					DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
 					int integerRecived = dis.readInt();
 					System.out.println("Entero recibido");
-					int integertosend = integerRecived +1;
+					int integertosend = integerRecived + 1;
 					dos.writeInt(integertosend);
 					System.out.println("Entero enviado");
-				}			
-				catch (Exception e) {
+				} catch (Exception e) {
 
 				}
 
-				
 			}
-
 
 		}
 	}
@@ -103,10 +102,12 @@ public class NFServer implements Runnable {
 	 * @see java.lang.Runnable#run()
 	 */
 	public void run() {
+
 		/*
 		 * TODO: (Boletín SocketsTCP) Usar el socket servidor para esperar conexiones de
 		 * otros peers que soliciten descargar ficheros
 		 */
+
 		/*
 		 * TODO: (Boletín SocketsTCP) Al establecerse la conexión con un peer, la
 		 * comunicación con dicho cliente se hace en el método
@@ -121,9 +122,28 @@ public class NFServer implements Runnable {
 		 * hilo es el que se encarga de atender al cliente conectado, no podremos tener
 		 * más de un cliente conectado a este servidor.
 		 */
+		if (serverSocket == null || !serverSocket.isBound()) {
+			System.err.println("[NFServer] Server socket is null or not bound.");
+			return;
+		}
+		System.out.println("[NFServer] Server running en el puerto " + serverSocket.getLocalPort());
+		while (!stopServer) {
+			try {
+				// Esperar conexiones de clientes
+				Socket clientSocket = serverSocket.accept();
+				System.out.println("[NFServer] New client connected: " + clientSocket.getInetAddress());
 
-
-
+				// Crear un hilo para manejar la conexión con el cliente
+				NFServerThread clientThread = new NFServerThread(clientSocket);
+				clientThread.start();
+			} catch (IOException e) {
+				if (stopServer) {
+					System.out.println("[NFServer] Server shutting down...");
+				} else {
+					System.err.println("[NFServer] Error accepting client connection: " + e.getMessage());
+				}
+			}
+		}
 
 	}
 	/*
@@ -133,24 +153,24 @@ public class NFServer implements Runnable {
 	 */
 
 	public void startServer() {
-		new Thread(this).start(); 
+		new Thread(this).start();
 	}
+
 	public void stopserver() {
-		 stopServer = true;
-	        try {
-	        	
-	            serverSocket.close();
-	            System.out.println("* Servidor detenido.");
-	        } catch (IOException e) {
-	            System.err.println("* Error al detener el servidor: " + e.getMessage());
-	            e.printStackTrace();
-	        }
+		stopServer = true;
+		try {
+
+			serverSocket.close();
+			System.out.println("* Servidor detenido.");
+		} catch (IOException e) {
+			System.err.println("* Error al detener el servidor: " + e.getMessage());
+			e.printStackTrace();
+		}
 	}
-	
+
 	public int getPort() {
 		return serverSocket.getLocalPort();
 	}
-
 
 	/**
 	 * Método de clase que implementa el extremo del servidor del protocolo de
@@ -162,7 +182,7 @@ public class NFServer implements Runnable {
 	public static void serveFilesToClient(Socket socket) {
 		/*
 		 * TODO: (Boletín SocketsTCP) Crear dis/dos a partir del socket
-		 */
+		 */		
 		/*
 		 * TODO: (Boletín SocketsTCP) Mientras el cliente esté conectado, leer mensajes
 		 * de socket, convertirlo a un objeto PeerMessage y luego actuar en función del
@@ -179,12 +199,112 @@ public class NFServer implements Runnable {
 		 * método lookupFilePath() de FileDatabase devuelve la ruta al fichero a partir
 		 * de su hash completo.
 		 */
+		
+		try (DataInputStream dis = new DataInputStream(socket.getInputStream());
+				DataOutputStream dos = new DataOutputStream(socket.getOutputStream())) {
 
+	        boolean running = true;
 
+			while (running) {
+				// Leer el mensaje entrante
+	            PeerMessage receivedMsg = PeerMessage.readMessageFromInputStream(dis);
+				byte opcode = receivedMsg.getOpcode();
+				
+
+				switch (opcode) {
+				
+	              case PeerMessageOps.OPCODE_DOWNLOAD:
+	                    handleDownloadRequest(receivedMsg, dos);
+	                    break;
+
+	                case PeerMessageOps.OPCODE_GET_CHUNK:
+	                    handleChunkRequest(receivedMsg, dos);
+	                    break;
+
+	                case PeerMessageOps.OPCODE_UPLOAD_FILE:
+	                    handleFileUpload(receivedMsg, dis);
+	                    break;
+
+	                case PeerMessageOps.OPCODE_END_OF_FILE:
+	                    System.out.println("[Server] Cliente finalizó la conexión.");
+	                    running = false;
+	                    break;
+
+				default:
+					System.err.println("Opcode desconocido: " + opcode);
+					break;
+
+				}
+			}
+
+		} catch (IOException e) {
+			System.err.println("Error en la comunicación con el cliente: " + e.getMessage());
+		}
 
 	}
 
+	private static void handleDownloadRequest(PeerMessage receivedMsg, DataOutputStream dos) throws IOException {
+	    String requestedFile = receivedMsg.getFile_name().toString();
+	    
+	    // Obtener la lista de archivos disponibles
+	    FileInfo[] files = NanoFiles.db.getFiles();
+	    FileInfo[] matchingFiles = FileInfo.lookupFilenameSubstring(files, requestedFile);
 
+	    if (matchingFiles.length > 0) {
+	        // Enviar la lista de archivos encontrados
+	        dos.writeByte(PeerMessageOps.OPCODE_FILE);
+	        dos.writeInt(matchingFiles.length);
+	        
+	        for (FileInfo file : matchingFiles) {
+	            dos.writeUTF(file.fileName);
+	            dos.writeLong(file.fileSize);
+	        }
+	    } else {
+	        dos.writeByte(PeerMessageOps.OPCODE_FILE_NOT_FOUND);
+	    }
+	}
+
+	
+	private static void handleChunkRequest(PeerMessage receivedMsg, DataOutputStream dos) throws IOException {
+	    String fileHash = receivedMsg.getHash().toString();
+	    long offset = receivedMsg.getOffset();
+	    int chunkSize = receivedMsg.getChunkSize();
+
+	    String filePath = NanoFiles.db.lookupFilePath(fileHash);
+	    if (filePath == null) {
+	        dos.writeByte(PeerMessageOps.OPCODE_FILE_NOT_FOUND);
+	        return;
+	    }
+
+	    try (RandomAccessFile file = new RandomAccessFile(filePath, "r")) {
+	        file.seek(offset);
+	        byte[] buffer = new byte[chunkSize];
+	        int bytesRead = file.read(buffer);
+
+	        dos.writeByte(PeerMessageOps.OPCODE_FILE);
+	        dos.writeInt(bytesRead);
+	        dos.write(buffer, 0, bytesRead);
+	    }
+	}
+
+	private static void handleFileUpload(PeerMessage receivedMsg, DataInputStream dis) throws IOException {
+	    String filename = receivedMsg.getFile_name().toString();
+	    long fileSize = receivedMsg.getChunkSize();
+	    String savePath = "uploads/" + filename;
+
+	    try (FileOutputStream fos = new FileOutputStream(savePath)) {
+	        byte[] buffer = new byte[4096];
+	        long bytesReceived = 0;
+
+	        while (bytesReceived < fileSize) {
+	            int bytesToRead = (int) Math.min(buffer.length, fileSize - bytesReceived);
+	            int bytesRead = dis.read(buffer, 0, bytesToRead);
+	            fos.write(buffer, 0, bytesRead);
+	            bytesReceived += bytesRead;
+	        }
+	        System.out.println("[Server] Archivo recibido: " + filename);
+	    }
+	}
 
 
 }
