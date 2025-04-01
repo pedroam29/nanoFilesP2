@@ -41,7 +41,7 @@ public class NFControllerLogicP2P {
 		 * caso el servidor ya está en marcha.
 		 */
 		if (fileServer != null) {
-			System.err.println("File server is already running");
+			System.err.println("[NFControllerLogicP2P]File server is already running");
 		} else {
 
 			// 2. Crear y lanzar un hilo para el servidor en segundo plano
@@ -57,14 +57,30 @@ public class NFControllerLogicP2P {
 			serverThread.setDaemon(true); // Hacer que el hilo del servidor termine cuando el programa finaliza
 			serverThread.start(); // Iniciar el hilo
 
-			// 3. Comprobar que el puerto es válido
-			int port = fileServer.getPort(); // Método que devuelve el puerto en el que escucha el servidor
-			if (port > 0) {
-			    System.out.println("Servidor iniciado en el puerto: " + port);
-			    serverRunning = true;
-			} else {
-			    System.err.println("Error: puerto no válido.");
+
+			// Esperar hasta que el servidor haya sido inicializado
+			int retries = 10;
+			while (fileServer == null && retries > 0) {
+			    try {
+			        Thread.sleep(100); // Esperar 100 ms
+			    } catch (InterruptedException e) {
+			        e.printStackTrace();
+			    }
+			    retries--;
 			}
+
+			if (fileServer != null) {
+			    int port = fileServer.getPort();
+			    if (port > 0) {
+			        System.out.println("Servidor iniciado en el puerto: " + port);
+			        serverRunning = true;
+			    } else {
+			        System.err.println("Error: puerto no válido.");
+			    }
+			} else {
+			    System.err.println("Error: el servidor no se inició correctamente.");
+			}
+
 
 
 		}
@@ -94,7 +110,7 @@ public class NFControllerLogicP2P {
 			// Este código es inalcanzable: el método 'test' nunca retorna...
 		} catch (IOException e1) {
 			e1.printStackTrace();
-			System.err.println("Cannot start the file server");
+			System.err.println("[NFControllerLogicP2P]Cannot start the file server");
 			fileServer = null;
 		}
 	}
