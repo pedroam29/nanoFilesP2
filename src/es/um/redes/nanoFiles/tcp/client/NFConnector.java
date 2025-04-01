@@ -42,6 +42,52 @@ public class NFConnector {
 
 
 	}
+	
+	public boolean downloadFileChunk(String targetFileHashSubstr, File file, int n, int nServers) throws IOException {
+		boolean success = false;
+		System.out.println("Starting download");
+		//Creacion del mensaje download
+		PeerMessage msg = new PeerMessage (PeerMessageOps.OPCODE_DOWNLOAD);
+		msg.setHash(targetFileHashSubstr.getBytes());
+		msg.setNumberOfServersThatHaveFile((byte) nServers);
+		msg.setIdentifierServer((byte) n);
+		//Envio del mensaje
+		msg.writeMessageToOutputStream(dos);
+		//Recepcion del mensaje de confirmacion
+		PeerMessage rcv = PeerMessage.readMessageFromInputStream(dis);
+		switch (rcv.getOpcode()) {
+		
+		//La descarga se ha realizado correctamente 
+		case PeerMessageOps.OPCODE_FILE:
+			success = true;
+			byte[] filehash = rcv.getHash();
+			FileOutputStream fos = new FileOutputStream(file, true);
+			fos.write(rcv.getDownloadedFile());
+			fos.close();	
+			if (n==nServers) {
+				success = FileDigest.computeFileChecksumString(file.getAbsolutePath()).equals(filehash);
+				if (success) {
+					System.out.println("Succesfully downloaded remote file to " + file.getAbsolutePath());
+					System.out.println("File '"+ file.getName() + "' downloaded succesfully.");
+				}
+			
+			}
+			break;
+			
+			
+		//File hash pasado no identifica a ningun fichero del servidor de ficheros
+		case PeerMessageOps.OPCODE_FILE_NOT_FOUND:
+			System.out.println("ERROR: Especified File not found.");
+			file.delete();
+			break;
+		
+		
+		
+		}
+		
+		
+		return success;
+	}
 
 	public void test() {
 		/*

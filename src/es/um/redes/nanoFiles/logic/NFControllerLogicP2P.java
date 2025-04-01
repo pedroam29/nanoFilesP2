@@ -2,6 +2,7 @@ package es.um.redes.nanoFiles.logic;
 
 import java.net.InetSocketAddress;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import es.um.redes.nanoFiles.tcp.client.NFConnector;
 import es.um.redes.nanoFiles.application.NanoFiles;
@@ -9,6 +10,7 @@ import es.um.redes.nanoFiles.application.NanoFiles;
 
 
 import es.um.redes.nanoFiles.tcp.server.NFServer;
+import es.um.redes.nanoFiles.util.FileDigest;
 import es.um.redes.nanoFiles.util.FileInfo;
 
 public class NFControllerLogicP2P {
@@ -18,7 +20,7 @@ public class NFControllerLogicP2P {
 	 */
 	private NFServer fileServer = null;
 
-
+	private NFControllerLogicDir controllerDir;
 
 
 	protected NFControllerLogicP2P() {
@@ -150,54 +152,83 @@ public class NFControllerLogicP2P {
 		 * método. Si se produce una excepción de entrada/salida (error del que no es
 		 * posible recuperarse), se debe informar sin abortar el programa
 		 */
+		
+		NFConnector srvConnection;
+		// 1. Pedimos al directorio el hash del archivo real que queremos descargar
+	 	FileInfo[] files = NanoFiles.db.getFiles();
+	    FileInfo[] matchingFiles = FileInfo.lookupFilenameSubstring(files, targetFileNameSubstring);
 
-		//Inicializacion
-				NFConnector srvConnection;
-				File f = new File(NanoFiles.sharedDirname + "/" + localFileName);
+	    String targetFileHash = null;
+	    if (matchingFiles.length > 0) {
+	        targetFileHash = matchingFiles[0].fileHash;  // Obtiene el hash del primer archivo encontrado
+	    } else {
+	        System.err.println("Archivo no encontrado");
+	        return false;
+	    }
 
-				
-				//Comprobamos si el fichero donde se guardará el contenido descargado existe. En ese caso devuelve falso.
-				if(f.exists()) {
-					System.err.println("* Error: The destination file already exists*");
-					return false;
-				} 
-				
-				//Fichero destino no existe. Se intenta crear.
-				else {
-					try {
-						f.createNewFile();
-					} catch (IOException e) {
-						System.err.println("*Error trying to create destination file ");
-						return false;
-					}
-				
-				
-					
-				//Para cada direccion de un servidor de ficheros se trata de establecer conexión con este para la descarga del fichero.
-				
-				
-				int n = 1;
-				int nservers = serverAddressList.length;
-				for (InetSocketAddress server : serverAddressList) {
-					
-					try {
-						srvConnection = new NFConnector(server);
-						downloaded = srvConnection.downloadFileChunk(targetFileNameSubstring, f, n, nservers);
-						if (!downloaded) {
-							System.out.println("Error downloading the file");
-							f.delete();
-							return false;
-						}
-					} catch (IOException e) {
-						System.out.println("* Error trying to establish connection with server " + server.toString() );
-						f.delete();
-						return false;	
-					}
-					n++;
-					}
-				
-				}
-		return downloaded;
+
+	    // 2. Verificar si el archivo ya existe
+	    File localFile = new File(NanoFiles.sharedDirname, localFileName);
+	    if (localFile.exists()) {
+	        System.err.println("[Download] File already exists: " + localFileName);
+	        return false;
+	    }
+
+	    // 3. Intentar crear el archivo
+	    try {
+	        if (!localFile.createNewFile()) {
+	            System.err.println("[Download] Error creating local file.");
+	            return false;
+	        }
+	    } catch (IOException e) {
+	        System.err.println("[Download] Failed to create local file: " + e.getMessage());
+	        return false;
+	    }
+
+	    // 4. Descargar desde los servidores en orden
+	    int n = 1;
+	    int totalServers = serverAddressList.length;
+	    try (FileOutputStream fos = new FileOutputStream(localFile)) {
+	        for (InetSocketAddress server : serverAddressList) {
+	            try {
+	            	srvConnection = new NFConnector(server);
+	                System.out.println("[Download] Connecting to: " + server);
+	                
+	                // Descargar un chunk del archivo
+	                boolean chunkDownloaded = srvConnection.downloadFileChunk(targetFileHash, localFile, n, totalServers);
+	                if (chunkDownloaded) {
+	                    System.out.println("[Download] Chunk " + n + " downloaded from " + server);
+	                    downloaded = true;
+	                } else {
+	                    System.err.println("[Download] Failed to download chunk " + n + " from " + server);
+	                }
+	            } catch (IOException e) {
+	                System.err.println("[Download] Connection error with " + server + ": " + e.getMessage());
+	            }
+	            n++;
+	        }
+	    } catch (IOException e) {
+	        System.err.println("[Download] File write error: " + e.getMessage());
+	        return false;
+	    }
+
+	    // 5. Verificar integridad del archivo descargado
+	    if (downloaded) {
+	        String downloadedFileHash = FileDigest.computeFileChecksumString(localFile.toString());
+	        if (!downloadedFileHash.equals(targetFileHash)) {
+	            System.err.println("[Download] File integrity check failed! Expected hash: " + targetFileHash +
+	                               " but got: " + downloadedFileHash);
+	            localFile.delete();  // Borrar archivo corrupto
+	            return false;
+	        }
+	        System.out.println("[Download] File successfully downloaded and verified.");
+	    } else {
+	        System.err.println("[Download] Download failed from all servers.");
+	        localFile.delete();
+	        return false;
+	    }
+
+	    return downloaded;
 	}
 
 	/**

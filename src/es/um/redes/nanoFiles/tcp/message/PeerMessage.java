@@ -25,6 +25,10 @@ public class PeerMessage {
 	private byte[] hash; // Por ejemplo, usado en OPCODE_END_OF_FILE y OPCODE_DOWNLOAD.
 	private byte[] file_name; // Para OPCODE_DOWNLOAD y OPCODE_UPLOAD_FILE.
 	private byte[] file_data; // Para OPCODE_FILE.
+	private byte numberOfServersThatHaveFile;
+	private byte identifierServer;
+	private byte[] downloadedFile = null;
+	private long downloadedFileLength;
 
 	// Campos para mensajes de operaciones (ej. GetChunk).
 	private long offset; // Desplazamiento (8 bytes) para OPCODE_GET_CHUNK.
@@ -112,6 +116,30 @@ public class PeerMessage {
 
 	public void setChunkSize(int chunkSize) {
 		this.chunkSize = chunkSize;
+	}
+	
+	public int getNumberOfServersThatHaveFile() {
+		return this.numberOfServersThatHaveFile;
+	}
+	
+	public void setNumberOfServersThatHaveFile(byte n) {
+		this.numberOfServersThatHaveFile = n;
+	}
+	
+	public void setIdentifierServer(byte n) {
+		this.identifierServer = n;
+	}
+	
+	public byte getIdentifierServer() {
+		return this.identifierServer;
+	}
+	public byte[] getDownloadedFile() {
+		byte[] aux = new byte[(int) this.downloadedFileLength];
+		System.arraycopy(this.downloadedFile, 0, aux, 0, (int) downloadedFileLength);
+		return aux;
+	}
+	public long getDownloadedFileLength() {
+		return this.downloadedFileLength;
 	}
 
 	/**
