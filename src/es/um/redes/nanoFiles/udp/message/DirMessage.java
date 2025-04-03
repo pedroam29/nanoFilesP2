@@ -51,7 +51,7 @@ public class DirMessage {
 	 * TODO: (Boletín MensajesASCII) Crear un atributo correspondiente a cada uno de
 	 * los campos de los diferentes mensajes de este protocolo.
 	 */
-	private FileInfo[] files;
+	private List<FileInfo> files;
 	private String hash;
 	private int port;
 	private InetSocketAddress[] serverList;
@@ -76,19 +76,19 @@ public class DirMessage {
 	public DirMessage (String op, String idProtocol, FileInfo[] files) {
 		operation = op;
 		protocolId = idProtocol;
-		this.files = new FileInfo[0]; 
+		this.files = new LinkedList<FileInfo>(Arrays.asList(files));
 		
 	}
 	public DirMessage (String op, String idProtocol, int port, FileInfo[] files) {
 		operation = op;
 		protocolId = idProtocol;
-		this.files = new FileInfo[0]; 
+		this.files = new LinkedList<FileInfo>(Arrays.asList(files));
 		setServerPort(port); 
 		
 	}
 	public DirMessage (String op, FileInfo[] files) {
 		operation = op;
-		this.files = new FileInfo[0]; 
+		this.files = new LinkedList<FileInfo>(Arrays.asList(files));
 		
 	}
 	public DirMessage (String op, String idProtocol, String filename) {
@@ -124,11 +124,17 @@ public class DirMessage {
 	}
 
 	public FileInfo[] getFiles() {
-		return files;
+		if (files != null)
+			return files.toArray(new FileInfo[0]);
+		return null;
 	}
 	
-	public void setFiles(FileInfo[] files) {
+	public void setFiles(List<FileInfo> files) {
 		this.files = files;
+	}
+	
+	public void addFiles(FileInfo file) {
+		this.files.add(file);
 	}
 	
 	public boolean isFilesNull() {
@@ -183,11 +189,12 @@ public class DirMessage {
 		// Local variables to save data during parsing
 		DirMessage m = null;
 
-
-
+		FileInfo[] filelist = null;
+		int nFile = 0;
+		
 		for (String line : lines) {
 			int idx = line.indexOf(DELIMITER); // Posición del delimitador
-			String fieldName = line.substring(0, idx).toLowerCase(); // minúsculas
+			String fieldName = line.substring(0, idx); // minúsculas
 			String value = line.substring(idx + 1).trim();
 
 			switch (fieldName) {
@@ -202,30 +209,15 @@ public class DirMessage {
 				break;
 			}
 			case FIELDNAME_FILES: {
-				assert (m.getOperation().equals(DirMessageOps.OPERATION_FILELIST));
-			    // Divide la cadena de archivos en partes separadas por el delimitador
-			    String[] fileInfos = value.split("; ");
-			    // Crea un array de FileInfo para almacenar los detalles de los archivos
-			    FileInfo[] files = new FileInfo[fileInfos.length];
-			    // Para cada cadena de archivo, divide los detalles en partes separadas por ", "
-			    for (int i = 0; i < fileInfos.length; i++) {
-			        String[] fileInfoParts = fileInfos[i].split(", ");
-			        // El primer elemento es el nombre del archivo
-			        String name = fileInfoParts[0];
-			        // Si hay más elementos, el segundo es el tamaño y el tercero es el hash
-			        long size = 0;
-			        String hash = "";
-			        if (fileInfoParts.length > 1) {
-			            // Extrae el tamaño y el hash si están disponibles
-			            size = Long.parseLong(fileInfoParts[1].replace(" bytes", ""));
-			            hash = fileInfoParts[2];
-			        }
-			        // Crea un nuevo objeto FileInfo con el nombre y los detalles opcionales
-			        files[i] = new FileInfo(hash,name, size, " ");
-			    }
-			    m.setFiles(files);
-			    
-			    break; 
+				if (m.isFilesNull()) {
+					m.setFiles(new LinkedList<FileInfo>());
+				}
+				String[] parts = value.split(",");
+				assert (parts.length == 3);
+				FileInfo file = new FileInfo(parts[0], parts[1], Long.parseLong(parts[2]), "");
+				m.addFiles(file);
+				break;
+
 			}
 			case FIELDNAME_HASH: {
 				m.setHash(value);
@@ -238,7 +230,7 @@ public class DirMessage {
 			}
 			case FIELDNAME_SERVE: {
 			    assert (m.getOperation().equals(DirMessageOps.OPERATION_SERVE));
-			    m.setFiles(FileInfo.loadFilesFromFolder(value));
+			    m.setFiles(Arrays.asList(FileInfo.loadFilesFromFolder(value)));
 			    break;
 			}
 			case FIELDNAME_SERVE_RESPONSE: {
@@ -252,7 +244,6 @@ public class DirMessage {
 				System.exit(-1);
 			}
 		}
-
 
 
 
@@ -283,9 +274,12 @@ public class DirMessage {
 			break;
 		}
 		case DirMessageOps.OPERATION_FILELIST_RESPONSE: {
-			for (FileInfo f : this.files) {
-				sb.append(FIELDNAME_FILES + DELIMITER + f.fileHash + "," + f.fileName + "," + f.fileSize + END_LINE);
-			}
+			if (this.files == null)
+				sb.append("No contiene ficheros");
+			else
+				for (FileInfo f : this.files) {
+					sb.append(FIELDNAME_FILES + DELIMITER + f.fileHash + "," + f.fileName + "," + f.fileSize + END_LINE);
+				}
 			break;
 		}
 		case DirMessageOps.OPERATION_SERVE_RESPONSE: {

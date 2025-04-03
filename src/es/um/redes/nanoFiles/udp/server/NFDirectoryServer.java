@@ -30,7 +30,7 @@ public class NFDirectoryServer {
 	 * funcionalidad del sistema nanoFilesP2P: ficheros publicados, servidores
 	 * registrados, etc.
 	 */
-	private HashMap<Integer, FileInfo[]> files;
+	private HashMap<Integer, FileInfo> files;
 	private LinkedList<InetSocketAddress> servidoresRegistrados;
 	
 
@@ -56,7 +56,7 @@ public class NFDirectoryServer {
 		 * TODO: (Boletín SocketsUDP) Inicializar atributos que mantienen el estado del
 		 * servidor de directorio: ficheros, etc.)
 		 */
-		files = new HashMap<>();
+		files = new HashMap<Integer, FileInfo>();
 		servidoresRegistrados = new LinkedList<>();
 
 		if (NanoFiles.testModeUDP) {
@@ -253,19 +253,17 @@ public class NFDirectoryServer {
 
 		
 		case DirMessageOps.OPERATION_FILELIST: {
-			if(this.files.isEmpty()) {
+			if(this.files==null || this.files.isEmpty()) {
+				System.out.println("DEBUG: Server BAD: ");
 				msgToSend = new DirMessage(DirMessageOps.OPERATION_FILELIST_RESPONSE, new FileInfo[0]); // Enviar lista vacía
 				break;
 			}
-			int totalSize = 0;
-			for (FileInfo[] fileInfos : files.values()) {
-				totalSize += fileInfos.length;
-			}
-			FileInfo[] allFiles = new FileInfo[totalSize];
-			int currentIndex = 0;
-			for (FileInfo[] fileInfos : files.values()) {
-				System.arraycopy(fileInfos, 0, allFiles, currentIndex, fileInfos.length);
-				currentIndex += fileInfos.length;
+		
+			FileInfo[] allFiles = new FileInfo[files.values().size()];
+			int i = 0;
+			for (FileInfo fileInfos : files.values()) {
+				allFiles[i] = fileInfos;
+				i++;
 			}
 			msgToSend = new DirMessage(DirMessageOps.OPERATION_FILELIST_RESPONSE, allFiles);
 			break;
@@ -289,6 +287,10 @@ public class NFDirectoryServer {
 		        }
 		    } else {
 		        System.out.println("* No se han encontrado archivos para publicar en la carpeta compartida.");
+		    }
+		    
+		    for(FileInfo f: files) {
+		    	this.files.put(f.hashCode(), f);
 		    }
 
 		    // Construir un mensaje de respuesta indicando si la publicación fue exitosa

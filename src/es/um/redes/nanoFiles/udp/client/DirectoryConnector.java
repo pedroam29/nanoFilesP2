@@ -299,11 +299,9 @@ public class DirectoryConnector {
 		if (response != null) {
 
 			String responseAString = new String(response, 0, response.length);
-			System.out.println("Receiving..." + responseAString);
 			DirMessage msgFromServer = DirMessage.fromString(responseAString);
 
-			if (msgFromServer != null
-					&& msgFromServer.getOperation().equals(DirMessageOps.OPERATION_FILELIST_RESPONSE)) {
+			if (msgFromServer != null && msgFromServer.getOperation().equals(DirMessageOps.OPERATION_FILELIST_RESPONSE)) {
 				// Añadir elementos a filelist;
 				filelist = msgFromServer.getFiles();
 			}

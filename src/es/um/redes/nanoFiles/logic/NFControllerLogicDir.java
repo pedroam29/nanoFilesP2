@@ -109,10 +109,10 @@ public class NFControllerLogicDir {
 		FileInfo[] trackedFiles = directoryConnector.getFileList(); //
 		System.out.println(
 				"* These are the files tracked by the directory at " + directoryConnector.getDirectoryHostname());
-		if (trackedFiles == null) {
-	        System.out.println("⚠ No files are being tracked (null response).");
-	        return; // Salimos de la función para evitar la excepción
-	    }
+		if(trackedFiles==null) {
+			System.out.println("files tracked by the directory are null");
+			return;
+		}
 		FileInfo.printToSysout(trackedFiles);
 	}
 
