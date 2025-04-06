@@ -189,9 +189,6 @@ public class DirMessage {
 		// Local variables to save data during parsing
 		DirMessage m = null;
 
-		FileInfo[] filelist = null;
-		int nFile = 0;
-		
 		for (String line : lines) {
 			int idx = line.indexOf(DELIMITER); // Posición del delimitador
 			String fieldName = line.substring(0, idx); // minúsculas

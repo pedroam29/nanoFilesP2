@@ -110,7 +110,7 @@ public class NFControllerLogicDir {
 		System.out.println(
 				"* These are the files tracked by the directory at " + directoryConnector.getDirectoryHostname());
 		if(trackedFiles==null) {
-			System.out.println("files tracked by the directory are null");
+			System.out.println("Thera are no files tracked by the directory.");
 			return;
 		}
 		FileInfo.printToSysout(trackedFiles);
