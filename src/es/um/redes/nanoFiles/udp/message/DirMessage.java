@@ -73,23 +73,17 @@ public class DirMessage {
 		operation = op;
 		protocolId = idProtocol;
 	}
-	public DirMessage (String op, String idProtocol, FileInfo[] files) {
-		operation = op;
-		protocolId = idProtocol;
-		this.files = new LinkedList<FileInfo>(Arrays.asList(files));
-		
-	}
+
 	public DirMessage (String op, String idProtocol, int port, FileInfo[] files) {
 		operation = op;
 		protocolId = idProtocol;
 		this.files = new LinkedList<FileInfo>(Arrays.asList(files));
 		setServerPort(port); 
-		
 	}
+	
 	public DirMessage (String op, FileInfo[] files) {
 		operation = op;
 		this.files = new LinkedList<FileInfo>(Arrays.asList(files));
-		
 	}
 	public DirMessage (String op, String idProtocol, String filename) {
 		operation = op;
@@ -167,6 +161,28 @@ public class DirMessage {
         this.publishResponse = publishResponse;
     }
 	
+	public InetSocketAddress[] getServerList() {
+		return serverList;
+	}
+
+	public int getServerPort() {
+		return serverPort;
+	}
+
+	public void setServerPort(int serverPort) {
+		this.serverPort = serverPort;
+	}
+
+	public String getFilenameSubstring() {
+		return filenameSubstring;
+	}
+
+	public void setFilenameSubstring(String filenameSubstring) {
+		this.filenameSubstring = filenameSubstring;
+	}
+	
+	
+	
 	/**
 	 * Método que convierte un mensaje codificado como una cadena de caracteres, a
 	 * un objeto de la clase PeerMessage, en el cual los atributos correspondientes
@@ -216,20 +232,12 @@ public class DirMessage {
 				break;
 
 			}
-			case FIELDNAME_HASH: {
-				m.setHash(value);
-				break;
-			}
-
+			
 			case FIELDNAME_PORT: {
 				m.setPort(Integer.parseInt(value));
 				break;
 			}
-			case FIELDNAME_SERVE: {
-			    assert (m.getOperation().equals(DirMessageOps.OPERATION_SERVE));
-			    m.setFiles(Arrays.asList(FileInfo.loadFilesFromFolder(value)));
-			    break;
-			}
+
 			case FIELDNAME_SERVE_RESPONSE: {
                 assert (m.getOperation().equals(DirMessageOps.OPERATION_SERVE_RESPONSE));
                 m.setPublishResponse(Boolean.parseBoolean(value));
@@ -270,9 +278,10 @@ public class DirMessage {
 			sb.append(FIELDNAME_PROTOCOL + DELIMITER + protocolId + END_LINE);
 			break;
 		}
+		
 		case DirMessageOps.OPERATION_FILELIST_RESPONSE: {
-			if (this.files == null)
-				sb.append("No contiene ficheros");
+			if (this.files == null || this.files.isEmpty())
+				sb.append(FIELDNAME_FILES + DELIMITER + "[]" + END_LINE);
 			else
 				for (FileInfo f : this.files) {
 					sb.append(FIELDNAME_FILES + DELIMITER + f.fileHash + "," + f.fileName + "," + f.fileSize + END_LINE);
@@ -283,32 +292,12 @@ public class DirMessage {
 			//Le devuelve una respuesta en funcion de si ha sido o no un exito la publicacion de ficheros
             sb.append(FIELDNAME_SERVE_RESPONSE+ DELIMITER + publishResponse + END_LINE);
 		}
+		default:
+            throw new IllegalStateException("Unsupported operation: " + operation);
 		}
 		sb.append(END_LINE); // Marcamos el final del mensaje
 		return sb.toString();
 	}
 
-	
-	
-	public InetSocketAddress[] getServerList() {
-		return serverList;
-	}
 
-	public int getServerPort() {
-		return serverPort;
-	}
-
-	public void setServerPort(int serverPort) {
-		this.serverPort = serverPort;
-	}
-
-	public String getFilenameSubstring() {
-		return filenameSubstring;
-	}
-
-	public void setFilenameSubstring(String filenameSubstring) {
-		this.filenameSubstring = filenameSubstring;
-	}
-	
-	
 }

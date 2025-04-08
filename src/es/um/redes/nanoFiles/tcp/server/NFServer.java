@@ -171,7 +171,8 @@ public class NFServer implements Runnable {
 	public int getPort() {
 		return serverSocket.getLocalPort();
 	}
-
+	
+	
 	/**
 	 * Método de clase que implementa el extremo del servidor del protocolo de
 	 * transferencia de ficheros entre pares.
@@ -199,111 +200,89 @@ public class NFServer implements Runnable {
 		 * método lookupFilePath() de FileDatabase devuelve la ruta al fichero a partir
 		 * de su hash completo.
 		 */
-		
-		try (DataInputStream dis = new DataInputStream(socket.getInputStream());
-				DataOutputStream dos = new DataOutputStream(socket.getOutputStream())) {
-
-	        boolean running = true;
-
+		try (
+			DataInputStream dis = new DataInputStream(socket.getInputStream());
+			DataOutputStream dos = new DataOutputStream(socket.getOutputStream())
+		) {
+			boolean running = true;
+	
 			while (running) {
 				// Leer el mensaje entrante
-	            PeerMessage receivedMsg = PeerMessage.readMessageFromInputStream(dis);
-				byte opcode = receivedMsg.getOpcode();
-				
-
+				PeerMessage msgFromClient = PeerMessage.readMessageFromInputStream(dis);
+				byte opcode = msgFromClient.getOpcode();
+	
 				switch (opcode) {
-				
-	              case PeerMessageOps.OPCODE_DOWNLOAD:
-	                    handleDownloadRequest(receivedMsg, dos);
-	                    break;
+					case PeerMessageOps.OPCODE_DOWNLOAD:
+    					try {
+        					byte[] targetHash = msgFromClient.getHash();
+        					String targetHashString = new String(targetHash); // Convertir el hash a String
+        					FileInfo[] files = NanoFiles.db.getFiles();
+        					FileInfo[] matchingFiles = FileInfo.lookupFilenameSubstring(files, targetHashString);
 
-	                case PeerMessageOps.OPCODE_GET_CHUNK:
-	                    handleChunkRequest(receivedMsg, dos);
-	                    break;
-
-	                case PeerMessageOps.OPCODE_UPLOAD_FILE:
-	                    handleFileUpload(receivedMsg, dis);
-	                    break;
-
-	                case PeerMessageOps.OPCODE_END_OF_FILE:
-	                    System.out.println("[Server] Cliente finalizó la conexión.");
-	                    running = false;
-	                    break;
-
-				default:
-					System.err.println("Opcode desconocido: " + opcode);
-					break;
-
+       						 if (matchingFiles.length == 0) {
+            					// No se encontraron archivos
+            					PeerMessage response = new PeerMessage(PeerMessageOps.OPCODE_FILE_NOT_FOUND);
+            					System.out.println("File with name substring \"" + targetHashString + "\" not found");
+            					response.writeMessageToOutputStream(dos);
+        					} else if (matchingFiles.length > 1) {
+            					// Se encontraron múltiples archivos con el mismo nombre
+            					System.out.println("Name substring \"" + targetHashString + "\" is ambiguous. Multiple matches found.");
+            					for (FileInfo file : matchingFiles) {
+               						 System.out.println(" - " + file.fileName + " (Hash: " + file.fileHash + ")");
+           			            }
+            					PeerMessage response = new PeerMessage(PeerMessageOps.OPCODE_FILE_NOT_FOUND);
+            					response.writeMessageToOutputStream(dos);
+        					} else {
+            					// Se encontró exactamente un archivo
+            					String filePath = matchingFiles[0].filePath;
+            					sendFileInChunks(filePath, dos, targetHash);
+        					}
+    					} catch (Exception e) {
+        					System.err.println("Error processing OPCODE_DOWNLOAD: " + e.getMessage());
+        					e.printStackTrace();
+    					}
+    					break;
+	
+					case PeerMessageOps.OPCODE_END_OF_FILE:
+						System.out.println("[Server] Cliente finalizó la conexión.");
+						running = false;
+						break;
+	
+					default:
+						System.err.println("Unexpected message operation: \"" + PeerMessageOps.opcodeToOperation(opcode) + "\"");
+						break;
 				}
 			}
-
 		} catch (IOException e) {
-			System.err.println("Error en la comunicación con el cliente: " + e.getMessage());
+			System.err.println("Server exception: " + e.getMessage());
+			e.printStackTrace();
 		}
-
 	}
-
-	private static void handleDownloadRequest(PeerMessage receivedMsg, DataOutputStream dos) throws IOException {
-	    String requestedFile = receivedMsg.getFile_name().toString();
-	    
-	    // Obtener la lista de archivos disponibles
-	    FileInfo[] files = NanoFiles.db.getFiles();
-	    FileInfo[] matchingFiles = FileInfo.lookupFilenameSubstring(files, requestedFile);
-
-	    if (matchingFiles.length > 0) {
-	        // Enviar la lista de archivos encontrados
-	        dos.writeByte(PeerMessageOps.OPCODE_FILE);
-	        dos.writeInt(matchingFiles.length);
-	        
-	        for (FileInfo file : matchingFiles) {
-	            dos.writeUTF(file.fileName);
-	            dos.writeLong(file.fileSize);
-	        }
-	    } else {
-	        dos.writeByte(PeerMessageOps.OPCODE_FILE_NOT_FOUND);
-	    }
-	}
-
 	
-	private static void handleChunkRequest(PeerMessage receivedMsg, DataOutputStream dos) throws IOException {
-	    String fileHash = receivedMsg.getHash().toString();
-	    long offset = receivedMsg.getOffset();
-	    int chunkSize = receivedMsg.getChunkSize();
-
-	    String filePath = NanoFiles.db.lookupFilePath(fileHash);
-	    if (filePath == null) {
-	        dos.writeByte(PeerMessageOps.OPCODE_FILE_NOT_FOUND);
-	        return;
-	    }
-
-	    try (RandomAccessFile file = new RandomAccessFile(filePath, "r")) {
-	        file.seek(offset);
-	        byte[] buffer = new byte[chunkSize];
-	        int bytesRead = file.read(buffer);
-
-	        dos.writeByte(PeerMessageOps.OPCODE_FILE);
-	        dos.writeInt(bytesRead);
-	        dos.write(buffer, 0, bytesRead);
-	    }
-	}
-
-	private static void handleFileUpload(PeerMessage receivedMsg, DataInputStream dis) throws IOException {
-	    String filename = receivedMsg.getFile_name().toString();
-	    long fileSize = receivedMsg.getChunkSize();
-	    String savePath = "uploads/" + filename;
-
-	    try (FileOutputStream fos = new FileOutputStream(savePath)) {
-	        byte[] buffer = new byte[4096];
-	        long bytesReceived = 0;
-
-	        while (bytesReceived < fileSize) {
-	            int bytesToRead = (int) Math.min(buffer.length, fileSize - bytesReceived);
-	            int bytesRead = dis.read(buffer, 0, bytesToRead);
-	            fos.write(buffer, 0, bytesRead);
-	            bytesReceived += bytesRead;
-	        }
-	        System.out.println("[Server] Archivo recibido: " + filename);
-	    }
+	private static void sendFileInChunks(String filePath, DataOutputStream dos, byte[] targetHash) {
+		final int CHUNK_SIZE = 4096; // Tamaño del fragmento (más eficiente)
+		try (RandomAccessFile file = new RandomAccessFile(filePath, "r")) {
+			long fileLength = file.length();
+			long offset = 0;
+	
+			while (offset < fileLength) {
+				int bytesToRead = (int) Math.min(CHUNK_SIZE, fileLength - offset);
+				byte[] chunk = new byte[bytesToRead];
+				file.seek(offset);
+				file.readFully(chunk, 0, bytesToRead);
+	
+				PeerMessage chunkMessage = new PeerMessage(PeerMessageOps.OPCODE_FILE, chunk);
+				chunkMessage.writeMessageToOutputStream(dos);
+	
+				offset += bytesToRead;
+			}
+	
+			PeerMessage endOfFileMessage = new PeerMessage(PeerMessageOps.OPCODE_END_OF_FILE, targetHash);
+			endOfFileMessage.writeMessageToOutputStream(dos);
+		} catch (IOException e) {
+			System.err.println("Error sending file: " + e.getMessage());
+			e.printStackTrace();
+		}
 	}
 
 
