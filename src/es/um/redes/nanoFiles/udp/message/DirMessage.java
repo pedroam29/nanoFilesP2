@@ -180,7 +180,10 @@ public class DirMessage {
 	public void setFilenameSubstring(String filenameSubstring) {
 		this.filenameSubstring = filenameSubstring;
 	}
-	
+	public void setServerList(InetSocketAddress[] serverList) {
+		this.serverList = serverList;
+		
+	}
 	
 	
 	/**
@@ -237,6 +240,11 @@ public class DirMessage {
 				m.setPort(Integer.parseInt(value));
 				break;
 			}
+			
+			case FIELDNAME_HASH: {
+			    m.setFilenameSubstring(value);
+			    break;
+			}
 
 			case FIELDNAME_SERVE_RESPONSE: {
                 assert (m.getOperation().equals(DirMessageOps.OPERATION_SERVE_RESPONSE));
@@ -291,10 +299,16 @@ public class DirMessage {
 			//Le devuelve una respuesta en funcion de si ha sido o no un exito la publicacion de ficheros
             sb.append(FIELDNAME_SERVE_RESPONSE+ DELIMITER + publishResponse + END_LINE);
 		}
+		case DirMessageOps.OPERATION_DOWNLOAD: {
+		    sb.append(FIELDNAME_HASH + DELIMITER + filenameSubstring + END_LINE);
+		    break;
+		}
 		}
 		sb.append(END_LINE); // Marcamos el final del mensaje
 		return sb.toString();
 	}
+
+	
 
 
 }

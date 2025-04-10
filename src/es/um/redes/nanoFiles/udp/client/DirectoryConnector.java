@@ -328,13 +328,14 @@ public class DirectoryConnector {
 		DirMessage getFileListMessage = new DirMessage(DirMessageOps.OPERATION_DOWNLOAD, NanoFiles.PROTOCOL_ID,
 				filenameSubstring);
 		String getFileListMessageString = getFileListMessage.toString();
+		System.out.println("[Client] Sending request: " + getFileListMessage.toString());
 		byte[] requestData = getFileListMessageString.getBytes();
 		byte[] response = sendAndReceiveDatagrams(requestData);
 
 		if (response != null) {
 
 			String responseAString = new String(response, 0, response.length);
-			System.out.println("Receiveing..." + responseAString);
+			System.out.println("Receiving..." + responseAString);
 			DirMessage msgFromServer = DirMessage.fromString(responseAString);
 
 			if (msgFromServer != null && msgFromServer.getOperation().equals(DirMessageOps.OPERATION_DOWNLOAD_OK)) {

@@ -6,8 +6,10 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 
 import es.um.redes.nanoFiles.application.NanoFiles;
 import es.um.redes.nanoFiles.udp.message.DirMessage;
@@ -300,6 +302,37 @@ public class NFDirectoryServer {
 		    this.files.put(msgToSend.getPort(), files);
 		    // Aquí lo que se hace es poner la respuesta del Publish a true en el caso en el que encuentre algún fichero compatible
 		    msgToSend.setPublishResponse(files != null && files.length > 0); 
+		    break;
+		}
+		case DirMessageOps.OPERATION_DOWNLOAD: {
+		    String filenameSubstring = receivedMessage.getFilenameSubstring();
+		    System.out.println("[Directory] Received download request for filename substring: " + filenameSubstring);
+		    List<InetSocketAddress> matchingServers = new ArrayList<>();
+		    System.out.println("[Directory] Received download request for filename substring: " + filenameSubstring);
+		    for (InetSocketAddress server : servidoresRegistrados) {
+		        FileInfo[] serverFiles = files.get(server.getPort());
+		        if (serverFiles != null) {
+		            for (FileInfo file : serverFiles) {
+		                if (file.fileName.contains(filenameSubstring)) {
+		                    matchingServers.add(server);
+		                    break;
+		                }
+		            }
+		        }
+		    }
+
+		    if (matchingServers.isEmpty()) {
+		        System.out.println("[Directory] No servers found for filename substring: " + filenameSubstring);
+		        msgToSend = new DirMessage(DirMessageOps.OPERATION_DOWNLOAD_BAD);
+		    } else {
+		        System.out.println("[Directory] Found servers for filename substring: " + filenameSubstring);
+		        for (InetSocketAddress server : matchingServers) {
+		            System.out.println("[Directory] Server: " + server);
+		        }
+		        InetSocketAddress[] serverList = matchingServers.toArray(new InetSocketAddress[0]);
+		        msgToSend = new DirMessage(DirMessageOps.OPERATION_DOWNLOAD_OK, NanoFiles.PROTOCOL_ID);
+		        msgToSend.setServerList(serverList);
+		    }
 		    break;
 		}
 
