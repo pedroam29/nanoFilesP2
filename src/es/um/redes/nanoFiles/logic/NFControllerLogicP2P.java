@@ -141,7 +141,7 @@ public class NFControllerLogicP2P {
 			String localFileName) {
 		boolean downloaded = false;
 
-		if (serverAddressList.length == 0) {
+		if (serverAddressList == null) {
 			System.err.println("* Cannot start download - No list of server addresses provided");
 			return false;
 		}

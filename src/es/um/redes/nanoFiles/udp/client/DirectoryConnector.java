@@ -258,6 +258,7 @@ public class DirectoryConnector {
 		// TODO: Ver TODOs en pingDirectory y seguir esquema similar
 		DirMessage msgToSend = new DirMessage(DirMessageOps.OPERATION_SERVE, NanoFiles.PROTOCOL_ID, serverPort, files);
 		String msgToSendString = msgToSend.toString();
+		System.out.println("[Client] Registering file server with message: " + msgToSendString);
 		byte[] requestData = msgToSendString.getBytes();
 		byte[] response = sendAndReceiveDatagrams(requestData);
 

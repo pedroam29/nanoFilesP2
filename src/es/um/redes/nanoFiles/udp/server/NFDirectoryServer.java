@@ -290,6 +290,11 @@ public class NFDirectoryServer {
 		        for (FileInfo file : files) {
 		            System.out.println("*- " + file);
 		        }
+		        this.files.put(receivedMessage.getPort(), files);
+		        InetSocketAddress serverAddress = new InetSocketAddress(pkt.getAddress(), receivedMessage.getPort());
+		        if (!servidoresRegistrados.contains(serverAddress)) {
+		            servidoresRegistrados.add(serverAddress);
+		        }
 		    } else {
 		        System.out.println("* No se han encontrado archivos para publicar en la carpeta compartida.");
 		    }
@@ -299,7 +304,7 @@ public class NFDirectoryServer {
 
 		    // Construir un mensaje de respuesta indicando si la publicación fue exitosa
 		    msgToSend = new DirMessage(DirMessageOps.OPERATION_SERVE_RESPONSE);
-		    this.files.put(msgToSend.getPort(), files);
+		    
 		    // Aquí lo que se hace es poner la respuesta del Publish a true en el caso en el que encuentre algún fichero compatible
 		    msgToSend.setPublishResponse(files != null && files.length > 0); 
 		    break;
