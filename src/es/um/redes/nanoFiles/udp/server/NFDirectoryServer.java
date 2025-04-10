@@ -7,6 +7,7 @@ import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -32,7 +33,7 @@ public class NFDirectoryServer {
 	 * funcionalidad del sistema nanoFilesP2P: ficheros publicados, servidores
 	 * registrados, etc.
 	 */
-	private HashMap<Integer, FileInfo[]> files;
+	private HashMap<InetSocketAddress, FileInfo[]> files;
 	private LinkedList<InetSocketAddress> servidoresRegistrados;
 	
 
@@ -58,7 +59,7 @@ public class NFDirectoryServer {
 		 * TODO: (Boletín SocketsUDP) Inicializar atributos que mantienen el estado del
 		 * servidor de directorio: ficheros, etc.)
 		 */
-		files = new HashMap<Integer, FileInfo[]>();
+		files = new HashMap<InetSocketAddress, FileInfo[]>();
 		servidoresRegistrados = new LinkedList<>();
 
 		if (NanoFiles.testModeUDP) {
@@ -290,8 +291,9 @@ public class NFDirectoryServer {
 		        for (FileInfo file : files) {
 		            System.out.println("*- " + file);
 		        }
-		        this.files.put(receivedMessage.getPort(), files);
-		        InetSocketAddress serverAddress = new InetSocketAddress(pkt.getAddress(), receivedMessage.getPort());
+		        InetSocketAddress serverAddress = new InetSocketAddress(pkt.getAddress(), receivedMessage.getServerPort());
+		        System.out.println("[Directory] puerto del servidor:" + receivedMessage.getServerPort());
+		        this.files.put(serverAddress, files);
 		        if (!servidoresRegistrados.contains(serverAddress)) {
 		            servidoresRegistrados.add(serverAddress);
 		        }
@@ -315,7 +317,7 @@ public class NFDirectoryServer {
 		    List<InetSocketAddress> matchingServers = new ArrayList<>();
 		    System.out.println("[Directory] Received download request for filename substring: " + filenameSubstring);
 		    for (InetSocketAddress server : servidoresRegistrados) {
-		        FileInfo[] serverFiles = files.get(server.getPort());
+		        FileInfo[] serverFiles = files.get(server);
 		        if (serverFiles != null) {
 		            for (FileInfo file : serverFiles) {
 		                if (file.fileName.contains(filenameSubstring)) {
@@ -335,6 +337,7 @@ public class NFDirectoryServer {
 		            System.out.println("[Directory] Server: " + server);
 		        }
 		        InetSocketAddress[] serverList = matchingServers.toArray(new InetSocketAddress[0]);
+		        System.out.println("[Directory] Enviando lista de servidores: " + Arrays.toString(serverList));
 		        msgToSend = new DirMessage(DirMessageOps.OPERATION_DOWNLOAD_OK, NanoFiles.PROTOCOL_ID);
 		        msgToSend.setServerList(serverList);
 		    }

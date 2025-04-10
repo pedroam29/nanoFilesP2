@@ -49,9 +49,11 @@ public class NFConnector {
 		//Creacion del mensaje download
 		PeerMessage msg = new PeerMessage (PeerMessageOps.OPCODE_DOWNLOAD);
 		msg.setHash(targetFileHashSubstr.getBytes());
+		msg.setFile_name(file.getName().getBytes());
 		msg.setNumberOfServersThatHaveFile((byte) nServers);
 		msg.setIdentifierServer((byte) n);
 		//Envio del mensaje
+		System.out.println("[Client] Hash enviado: " + targetFileHashSubstr);
 		msg.writeMessageToOutputStream(dos);
 		//Recepcion del mensaje de confirmacion
 		PeerMessage rcv = PeerMessage.readMessageFromInputStream(dis);

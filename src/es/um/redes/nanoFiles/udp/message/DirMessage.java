@@ -37,7 +37,7 @@ public class DirMessage {
 	private static final String FIELDNAME_HASH = "hash";
 	private static final String FIELDNAME_PORT = "port";
 	private static final String FIELDNAME_SERVE_RESPONSE = "serveResponse";
-	private static final String FIELDNAME_SERVE = "serve";
+	private static final String FIELDNAME_SERVERS= "servers";
 	
 	/** 
 	 * Tipo del mensaje, de entre los tipos definidos en PeerMessageOps.
@@ -53,7 +53,6 @@ public class DirMessage {
 	 */
 	private List<FileInfo> files;
 	private String hash;
-	private int port;
 	private InetSocketAddress[] serverList;
 	private int serverPort;
 	private String filenameSubstring;
@@ -147,13 +146,6 @@ public class DirMessage {
 		return hash;
 	}
 	
-	public void setPort(int port) {
-		this.port = port;
-	}
-
-	public int getPort() {
-		return port;
-	} 
 	public boolean isPublishResponse() {
         return publishResponse;
     }
@@ -236,8 +228,24 @@ public class DirMessage {
 
 			}
 			
+			case FIELDNAME_SERVERS: {
+                String[] parts = value.split(":");
+                if (parts.length == 2) {
+                    InetSocketAddress server = new InetSocketAddress(parts[0], Integer.parseInt(parts[1]));
+                    if (m.getServerList() == null) {
+                        m.setServerList(new InetSocketAddress[1]);
+                        m.getServerList()[0] = server;
+                    } else {
+                        InetSocketAddress[] newList = Arrays.copyOf(m.getServerList(), m.getServerList().length + 1);
+                        newList[newList.length - 1] = server;
+                        m.setServerList(newList);
+                    }
+                }
+                break;
+            }
+			
 			case FIELDNAME_PORT: {
-				m.setPort(Integer.parseInt(value));
+				m.setServerPort(Integer.parseInt(value));
 				break;
 			}
 			
@@ -295,6 +303,16 @@ public class DirMessage {
 				}
 			break;
 		}
+		case DirMessageOps.OPERATION_SERVE: {
+	        sb.append(FIELDNAME_PORT + DELIMITER + serverPort + END_LINE); // Agregar el puerto
+	        if (this.files != null) {
+	            for (FileInfo f : this.files) {
+	                sb.append(FIELDNAME_FILES + DELIMITER + f.fileHash + "," + f.fileName + "," + f.fileSize + END_LINE);
+	            }
+	        }
+	        break;
+	    }
+		
 		case DirMessageOps.OPERATION_SERVE_RESPONSE: {
 			//Le devuelve una respuesta en funcion de si ha sido o no un exito la publicacion de ficheros
             sb.append(FIELDNAME_SERVE_RESPONSE+ DELIMITER + publishResponse + END_LINE);
@@ -302,6 +320,14 @@ public class DirMessage {
 		case DirMessageOps.OPERATION_DOWNLOAD: {
 		    sb.append(FIELDNAME_HASH + DELIMITER + filenameSubstring + END_LINE);
 		    break;
+		}
+		case DirMessageOps.OPERATION_DOWNLOAD_OK: {
+			if (serverList != null) {
+				for (InetSocketAddress server : serverList) {
+					sb.append(FIELDNAME_SERVERS + DELIMITER + server.getAddress().getHostAddress() + ":" + server.getPort() + END_LINE);
+				}
+			}
+			break;
 		}
 		}
 		sb.append(END_LINE); // Marcamos el final del mensaje
