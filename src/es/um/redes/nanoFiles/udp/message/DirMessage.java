@@ -278,10 +278,9 @@ public class DirMessage {
 			sb.append(FIELDNAME_PROTOCOL + DELIMITER + protocolId + END_LINE);
 			break;
 		}
-		
 		case DirMessageOps.OPERATION_FILELIST_RESPONSE: {
-			if (this.files == null || this.files.isEmpty())
-				sb.append(FIELDNAME_FILES + DELIMITER + "[]" + END_LINE);
+			if (this.files == null)
+				sb.append("No contiene ficheros");
 			else
 				for (FileInfo f : this.files) {
 					sb.append(FIELDNAME_FILES + DELIMITER + f.fileHash + "," + f.fileName + "," + f.fileSize + END_LINE);
@@ -292,8 +291,6 @@ public class DirMessage {
 			//Le devuelve una respuesta en funcion de si ha sido o no un exito la publicacion de ficheros
             sb.append(FIELDNAME_SERVE_RESPONSE+ DELIMITER + publishResponse + END_LINE);
 		}
-		default:
-            throw new IllegalStateException("Unsupported operation: " + operation);
 		}
 		sb.append(END_LINE); // Marcamos el final del mensaje
 		return sb.toString();

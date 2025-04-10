@@ -244,7 +244,7 @@ public class NFServer implements Runnable {
     					break;
 	
 					case PeerMessageOps.OPCODE_END_OF_FILE:
-						System.out.println("[Server] Cliente finalizó la conexión.");
+						System.out.println("[NFServer] Cliente finalizó la conexión.");
 						running = false;
 						break;
 	
