@@ -292,7 +292,6 @@ public class NFDirectoryServer {
 		            System.out.println("*- " + file);
 		        }
 		        InetSocketAddress serverAddress = new InetSocketAddress(pkt.getAddress(), receivedMessage.getServerPort());
-		        System.out.println("[Directory] puerto del servidor:" + receivedMessage.getServerPort());
 		        this.files.put(serverAddress, files);
 		        if (!servidoresRegistrados.contains(serverAddress)) {
 		            servidoresRegistrados.add(serverAddress);
@@ -313,9 +312,7 @@ public class NFDirectoryServer {
 		}
 		case DirMessageOps.OPERATION_DOWNLOAD: {
 		    String filenameSubstring = receivedMessage.getFilenameSubstring();
-		    System.out.println("[Directory] Received download request for filename substring: " + filenameSubstring);
 		    List<InetSocketAddress> matchingServers = new ArrayList<>();
-		    System.out.println("[Directory] Received download request for filename substring: " + filenameSubstring);
 		    for (InetSocketAddress server : servidoresRegistrados) {
 		        FileInfo[] serverFiles = files.get(server);
 		        if (serverFiles != null) {

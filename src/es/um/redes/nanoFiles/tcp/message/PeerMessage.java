@@ -134,6 +134,9 @@ public class PeerMessage {
 		return this.identifierServer;
 	}
 	public byte[] getDownloadedFile() {
+		if (downloadedFile == null) {
+	        throw new NullPointerException("Downloaded file data is null");
+	    }
 		byte[] aux = new byte[(int) this.downloadedFileLength];
 		System.arraycopy(this.downloadedFile, 0, aux, 0, (int) downloadedFileLength);
 		return aux;
@@ -195,6 +198,8 @@ public class PeerMessage {
 			byte[] dataBuffer = new byte[dataLength];
 			dis.readFully(dataBuffer);
 			message.setFile_data(dataBuffer);
+			message.downloadedFile = dataBuffer; // Inicializar downloadedFile
+		    message.downloadedFileLength = dataLength; // Establecer la longitud del archivo descargado
 			break;
 
 		case PeerMessageOps.OPCODE_GET_CHUNK:

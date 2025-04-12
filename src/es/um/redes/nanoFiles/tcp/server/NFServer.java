@@ -126,21 +126,21 @@ public class NFServer implements Runnable {
 			System.err.println("[NFServer] Server socket is null or not bound.");
 			return;
 		}
-		System.out.println("[NFServer] Server running en el puerto " + serverSocket.getLocalPort());
+		
 		while (!stopServer) {
 			try {
 				// Esperar conexiones de clientes
 				Socket clientSocket = serverSocket.accept();
-				System.out.println("[NFServer] New client connected: " + clientSocket.getInetAddress());
+				System.out.println("[NFServer] Nuevo peer conectado: " + clientSocket.getInetAddress());
 
 				// Crear un hilo para manejar la conexión con el cliente
 				NFServerThread clientThread = new NFServerThread(clientSocket);
 				clientThread.start();
 			} catch (IOException e) {
 				if (stopServer) {
-					System.out.println("[NFServer] Server shutting down...");
+					System.out.println("[NFServer] Cerrando server...");
 				} else {
-					System.err.println("[NFServer] Error accepting client connection: " + e.getMessage());
+					System.err.println("[NFServer] Error a la hora de aceptar la petición del peer: " + e.getMessage());
 				}
 			}
 		}
@@ -212,36 +212,31 @@ public class NFServer implements Runnable {
 				byte opcode = msgFromClient.getOpcode();
 	
 				switch (opcode) {
-					case PeerMessageOps.OPCODE_DOWNLOAD:
-    					try {
-        					byte[] targetHash = msgFromClient.getHash();
-        					String targetHashString = new String(targetHash); // Convertir el hash a String
-        					FileInfo[] files = NanoFiles.db.getFiles();
-        					FileInfo[] matchingFiles = FileInfo.lookupFilenameSubstring(files, targetHashString);
+				case PeerMessageOps.OPCODE_DOWNLOAD:
+				    try {
+				        // Obtener el hash enviado por el cliente
+				        byte[] targetHashBytes = msgFromClient.getHash();
+				        String targetHashString = new String(targetHashBytes); // Convertir el hash a String
+				        System.out.println("[Server] Hash recibido: " + targetHashString);
 
-       						 if (matchingFiles.length == 0) {
-            					// No se encontraron archivos
-            					PeerMessage response = new PeerMessage(PeerMessageOps.OPCODE_FILE_NOT_FOUND);
-            					System.out.println("File with name substring \"" + targetHashString + "\" not found");
-            					response.writeMessageToOutputStream(dos);
-        					} else if (matchingFiles.length > 1) {
-            					// Se encontraron múltiples archivos con el mismo nombre
-            					System.out.println("Name substring \"" + targetHashString + "\" is ambiguous. Multiple matches found.");
-            					for (FileInfo file : matchingFiles) {
-               						 System.out.println(" - " + file.fileName + " (Hash: " + file.fileHash + ")");
-           			            }
-            					PeerMessage response = new PeerMessage(PeerMessageOps.OPCODE_FILE_NOT_FOUND);
-            					response.writeMessageToOutputStream(dos);
-        					} else {
-            					// Se encontró exactamente un archivo
-            					String filePath = matchingFiles[0].filePath;
-            					sendFileInChunks(filePath, dos, targetHash);
-        					}
-    					} catch (Exception e) {
-        					System.err.println("Error processing OPCODE_DOWNLOAD: " + e.getMessage());
-        					e.printStackTrace();
-    					}
-    					break;
+				        // Buscar el archivo por su hash
+				        String filePath = NanoFiles.db.lookupFilePath(targetHashString);
+
+				        if (filePath == null) {
+				            // No se encontró el archivo
+				            PeerMessage response = new PeerMessage(PeerMessageOps.OPCODE_FILE_NOT_FOUND);
+				            System.out.println("File with hash \"" + targetHashString + "\" not found");
+				            response.writeMessageToOutputStream(dos);
+				        } else {
+				            // Se encontró el archivo, enviarlo en chunks
+				            System.out.println("[Server] Archivo encontrado: " + filePath);
+				            sendFileInChunks(filePath, dos, targetHashBytes);
+				        }
+				    } catch (Exception e) {
+				        System.err.println("Error processing OPCODE_DOWNLOAD: " + e.getMessage());
+				        e.printStackTrace();
+				    }
+				    break;
 	
 					case PeerMessageOps.OPCODE_END_OF_FILE:
 						System.out.println("[NFServer] Cliente finalizó la conexión.");
@@ -279,6 +274,7 @@ public class NFServer implements Runnable {
 	
 			PeerMessage endOfFileMessage = new PeerMessage(PeerMessageOps.OPCODE_END_OF_FILE, targetHash);
 			endOfFileMessage.writeMessageToOutputStream(dos);
+			System.out.println("[Server] Archivo enviado correctamente: " + filePath);
 		} catch (IOException e) {
 			System.err.println("Error sending file: " + e.getMessage());
 			e.printStackTrace();

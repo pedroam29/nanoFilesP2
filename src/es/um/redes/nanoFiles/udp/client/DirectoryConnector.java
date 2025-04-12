@@ -328,7 +328,6 @@ public class DirectoryConnector {
 		DirMessage getFileListMessage = new DirMessage(DirMessageOps.OPERATION_DOWNLOAD, NanoFiles.PROTOCOL_ID,
 				filenameSubstring);
 		String getFileListMessageString = getFileListMessage.toString();
-		System.out.println("[Client] Sending request: " + getFileListMessage.toString());
 		byte[] requestData = getFileListMessageString.getBytes();
 		byte[] response = sendAndReceiveDatagrams(requestData);
 
@@ -345,7 +344,6 @@ public class DirectoryConnector {
 			}
 
 		}
-		System.out.println("[Client] Lista de servidores recibida: " + Arrays.toString(serversList));
 		return serversList;
 	}
 
