@@ -350,7 +350,7 @@ public class NFDirectoryServer {
 		/*
 		 * TODO: (Boletín MensajesASCII) Convertir a String el objeto DirMessage
 		 * (msgToSend) con el mensaje de respuesta a enviar, extraer los bytes en que se
-		 * codifica el string y finalmente enviarlos en un datagrama
+		 * codifica el string y finalmente enviarlos en un datagram pkt
 		 */
 		if(msgToSend != null) {
 			String msgToSendAString = msgToSend.toString();
