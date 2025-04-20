@@ -22,18 +22,21 @@ public class NFServer implements Runnable {
 	private ServerSocket serverSocket = null;
 	private boolean stopServer = false;
 
-	public NFServer() throws IOException {
+	public NFServer(int port) throws IOException {
 		/*
 		 * TODO: (Boletín SocketsTCP) Crear una direción de socket a partir del puerto
 		 * especificado (PORT)
 		 */
-		InetSocketAddress serverSocketAddres = new InetSocketAddress(PORT);
+		InetSocketAddress serverSocketAddres = new InetSocketAddress(port);
 		/*
 		 * TODO: (Boletín SocketsTCP) Crear un socket servidor y ligarlo a la dirección
 		 * de socket anterior
 		 */
 		serverSocket = new ServerSocket();
 		serverSocket.bind(serverSocketAddres);
+	}
+	public NFServer ()throws IOException {
+		this(0);
 	}
 
 	/**

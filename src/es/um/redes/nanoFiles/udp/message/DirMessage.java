@@ -34,7 +34,7 @@ public class DirMessage {
 	private static final String FIELDNAME_PROTOCOL = "protocol";
 
 	private static final String FIELDNAME_FILES = "files";
-	private static final String FIELDNAME_HASH = "hash";
+	private static final String FIELDNAME_SUBSTRING = "hash";
 	private static final String FIELDNAME_PORT = "port";
 	private static final String FIELDNAME_SERVE_RESPONSE = "serveResponse";
 	private static final String FIELDNAME_SERVERS= "servers";
@@ -249,7 +249,7 @@ public class DirMessage {
 				break;
 			}
 			
-			case FIELDNAME_HASH: {
+			case FIELDNAME_SUBSTRING: {
 			    m.setFilenameSubstring(value);
 			    break;
 			}
@@ -316,9 +316,10 @@ public class DirMessage {
 		case DirMessageOps.OPERATION_SERVE_RESPONSE: {
 			//Le devuelve una respuesta en funcion de si ha sido o no un exito la publicacion de ficheros
             sb.append(FIELDNAME_SERVE_RESPONSE+ DELIMITER + publishResponse + END_LINE);
+            break;
 		}
 		case DirMessageOps.OPERATION_DOWNLOAD: {
-		    sb.append(FIELDNAME_HASH + DELIMITER + filenameSubstring + END_LINE);
+		    sb.append(FIELDNAME_SUBSTRING + DELIMITER + filenameSubstring + END_LINE);
 		    break;
 		}
 		case DirMessageOps.OPERATION_DOWNLOAD_OK: {
