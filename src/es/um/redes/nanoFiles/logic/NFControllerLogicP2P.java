@@ -231,7 +231,7 @@ public class NFControllerLogicP2P {
 				return false;
 			}
 			System.out.println("[Download] File successfully downloaded and verified.");
-			NanoFiles.db = new FileDatabase(NanoFiles.sharedDirname);
+			
 		} else {
 			System.err.println("[Download] Download failed from all servers.");
 			localFile.delete();
