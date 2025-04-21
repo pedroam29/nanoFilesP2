@@ -8,6 +8,7 @@ import es.um.redes.nanoFiles.tcp.client.NFConnector;
 import es.um.redes.nanoFiles.application.NanoFiles;
 
 import es.um.redes.nanoFiles.tcp.server.NFServer;
+import es.um.redes.nanoFiles.util.FileDatabase;
 import es.um.redes.nanoFiles.util.FileDigest;
 import es.um.redes.nanoFiles.util.FileInfo;
 
@@ -230,6 +231,7 @@ public class NFControllerLogicP2P {
 				return false;
 			}
 			System.out.println("[Download] File successfully downloaded and verified.");
+			NanoFiles.db = new FileDatabase(NanoFiles.sharedDirname);
 		} else {
 			System.err.println("[Download] Download failed from all servers.");
 			localFile.delete();
